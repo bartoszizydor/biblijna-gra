@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Biblijna Wędrówka</title>
+<style>
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #fdf6e3;
+         font-family: "Comic Sans MS", "Trebuchet MS", sans-serif; color: #3b2f1e; }
+  main { width: min(600px, 100% - 32px); text-align: center; }
+  #info { font-size: 20px; margin: 12px 0; min-height: 2.5em; }
+  #map { display: grid; gap: 2px; margin: 0 auto; width: fit-content; }
+  .t { width: min(8vw, 48px); height: min(8vw, 48px); font-size: min(6vw, 34px);
+       display: grid; place-items: center; border-radius: 8px; background: #a8d88a; }
+  .w { background: #6fb3e8; } .tree { background: #5c9b46; }
+  .pad { display: grid; grid-template-columns: repeat(3, 64px); gap: 6px; justify-content: center; margin: 16px; }
+  button { font: inherit; font-size: 24px; padding: 12px; border: 4px solid #e0b84f; border-radius: 16px;
+           background: #fff; color: inherit; cursor: pointer; }
+  button:hover, button:focus-visible { background: #fff3c4; outline: none; }
+  dialog { border: 4px solid #e0b84f; border-radius: 20px; max-width: 480px; text-align: center; background: #fffaf0; color: inherit; }
+  dialog .who { font-size: 64px; }
+  dialog p { font-size: 22px; }
+  dialog button { display: block; width: 100%; margin: 10px 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>🧒 Biblijna Wędrówka</h1>
+  <div id="info">Chodź strzałkami. Podejdź do postaci i rozwiąż jej zagadkę!</div>
+  <div id="map"></div>
+  <div class="pad">
+    <span></span><button data-d="0,-1" aria-label="Do góry">⬆️</button><span></span>
+    <button data-d="-1,0" aria-label="W lewo">⬅️</button><button data-d="0,1" aria-label="W dół">⬇️</button><button data-d="1,0" aria-label="W prawo">➡️</button>
+  </div>
+</main>
+<dialog id="dlg"></dialog>
+<script>
+// # drzewo, ~ woda, D brama, P start, cyfra = postać z zagadką
+const MAP = [
+  "###########",
+  "#P....~~~.#",
+  "#..0..~~~1#",
+  "#.....~~~.#",
+  "#.##......#",
+  "#.#3..#.2.#",
+  "#....##...#",
+  "#....4....D",
+  "###########",
+];
+console.assert(MAP.every(r => r.length === MAP[0].length), "wiersze mapy muszą mieć równą długość");
+
+// first answer is the correct one; shuffled when shown
+const NPCS = [
+  { pic: "🚢", name: "Noe", q: "Uratowałem zwierzęta w arce! Co Bóg pokazał na niebie po potopie?", a: ["Tęczę", "Księżyc", "Kometę"] },
+  { pic: "🐋", name: "Jonasz", q: "Połknęła mnie wielka ryba! Jak długo byłem w jej brzuchu?", a: ["Trzy dni i trzy noce", "Jeden dzień", "Cały rok"] },
+  { pic: "🐑", name: "Dawid", q: "Pokonałem olbrzyma Goliata! Czym to zrobiłem?", a: ["Procą i kamieniem", "Mieczem", "Łukiem"] },
+  { pic: "🦁", name: "Daniel", q: "Wrzucono mnie do jaskini lwów! Kto zamknął lwom paszcze?", a: ["Anioł Boży", "Król", "Żołnierze"] },
+  { pic: "📜", name: "Mojżesz", q: "Bóg dał mi na górze Synaj kamienne tablice. Ile przykazań na nich było?", a: ["Dziesięć", "Trzy", "Sto"] },
+];
+
+const mapEl = document.getElementById("map"), info = document.getElementById("info"), dlg = document.getElementById("dlg");
+const say = text => { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = "pl-PL"; speechSynthesis.speak(u); };
+const shuffle = arr => arr.map(v => [Math.random(), v]).sort((x, y) => x[0] - y[0]).map(p => p[1]);
+const solved = new Set();
+let px, py;
+MAP.forEach((row, y) => { const x = row.indexOf("P"); if (x >= 0) { px = x; py = y; } });
+mapEl.style.gridTemplateColumns = `repeat(${MAP[0].length}, auto)`;
+
+function draw() {
+  mapEl.innerHTML = "";
+  MAP.forEach((row, y) => [...row].forEach((c, x) => {
+    const t = document.createElement("div");
+    t.className = "t" + (c === "~" ? " w" : c === "#" ? " tree" : "");
+    t.textContent = x === px && y === py ? "🧒"
+      : c === "#" ? "🌳" : c === "D" ? (solved.size === NPCS.length ? "🌟" : "🚪")
+      : /\d/.test(c) ? (solved.has(+c) ? "✅" : NPCS[c].pic) : "";
+    mapEl.append(t);
+  }));
+}
+
+function move(dx, dy) {
+  if (dlg.open) return;
+  const c = MAP[py + dy][px + dx];
+  if (c === "#" || c === "~") return;
+  if (/\d/.test(c)) return solved.has(+c) ? (info.textContent = `${NPCS[c].name} dziękuje Ci za pomoc! 😊`) : ask(+c);
+  if (c === "D" && solved.size < NPCS.length) {
+    info.textContent = `Brama jest zamknięta. Pomóż jeszcze ${NPCS.length - solved.size} postaciom!`;
+    return say(info.textContent);
+  }
+  px += dx; py += dy;
+  draw();
+  if (c === "D") win();
+}
+
+function ask(n) {
+  const { pic, name, q, a } = NPCS[n];
+  dlg.innerHTML = `<div class="who" aria-hidden="true">${pic}</div><h2>${name}</h2><p>${q}</p>`;
+  shuffle(a).forEach(text => {
+    const b = document.createElement("button");
+    b.textContent = text;
+    b.onclick = () => {
+      if (text !== a[0]) { b.disabled = true; return say("Spróbuj jeszcze raz!"); }
+      solved.add(n);
+      dlg.close();
+      info.textContent = `Brawo! ⭐ ${solved.size} z ${NPCS.length}` + (solved.size === NPCS.length ? " — brama się otworzyła! Idź do 🌟" : "");
+      say(info.textContent.replace(/[⭐🌟—]/g, ""));
+      draw();
+    };
+    dlg.append(b);
+  });
+  dlg.showModal();
+  say(name + " mówi: " + q);
+}
+
+function win() {
+  dlg.innerHTML = `<div class="who">🏆</div><h2>Udało się!</h2><p>Pomogłeś wszystkim postaciom z Biblii!</p><button onclick="location.reload()">Zagraj jeszcze raz</button>`;
+  dlg.showModal();
+  say("Udało się! Pomogłeś wszystkim postaciom z Biblii!");
+}
+
+dlg.addEventListener("cancel", e => e.preventDefault()); // Esc nie pomija zagadki
+document.addEventListener("keydown", e => {
+  const d = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }[e.key];
+  if (d) { e.preventDefault(); move(...d); }
+});
+document.querySelectorAll("[data-d]").forEach(b => b.onclick = () => move(...b.dataset.d.split(",").map(Number)));
+draw();
+</script>
+</body>
+</html>
