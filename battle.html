@@ -8,73 +8,113 @@
   body { margin: 0; min-height: 100vh; display: grid; place-items: center;
          background: linear-gradient(#bfe6ff, #fdf6e3 45%);
          font-family: "Comic Sans MS", "Trebuchet MS", sans-serif; color: #3b2f1e; }
+  [hidden] { display: none !important; }
   /* szerokość liczona z wysokości ekranu, żeby całe pole + karty mieściły się w pionie */
-  main { width: max(220px, min(360px, 100vw - 24px, (100vh - 320px) * 0.69)); text-align: center; padding: 6px 0; }
-  @supports (height: 100dvh) { main { width: max(220px, min(360px, 100vw - 24px, (100dvh - 320px) * 0.69)); } }
-  h1 { font-size: 20px; margin: 0 0 4px; color: #8b5a2b; text-shadow: 0 2px 0 #fff; }
+  #game { width: max(220px, min(360px, 100vw - 24px, (100vh - 250px) * 0.69)); text-align: center; padding: 6px 0; }
+  @supports (height: 100dvh) { #game { width: max(220px, min(360px, 100vw - 24px, (100dvh - 250px) * 0.69)); } }
+  #menu { width: min(480px, 100vw - 24px); text-align: center; padding: 12px 0 24px; }
+  h1 { font-size: 26px; margin: 0 0 8px; color: #8b5a2b; text-shadow: 0 2px 0 #fff; }
+  .panel { background: #fffaf0; border: 3px solid #e0b84f; border-radius: 16px; padding: 10px; margin-bottom: 12px; }
+  .label { font-weight: bold; margin: 12px 0 8px; }
+  #menuMsg { color: #8e2b1f; min-height: 1.2em; margin: 6px 0; }
+  .diffs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .diffs button { font-size: 17px; padding: 10px 4px; }
   canvas { width: 100%; border-radius: 18px; border: 6px solid #8b5a2b; box-shadow: 0 6px 0 #5b3a1a;
            touch-action: none; display: block; box-sizing: border-box; }
-  #foeRow { margin: 0 0 6px; }
-  #foeFill { height: 100%; width: 0; background: linear-gradient(#ff9a8a, #c0392b); }
-  #manaRow, #foeRow { display: flex; align-items: center; gap: 8px; margin: 8px 0 10px; font-size: 16px; font-weight: bold; }
-  .bar { flex: 1; height: 16px; border-radius: 8px; background: #5b3a1a; border: 3px solid #e0b84f; overflow: hidden; position: relative; }
-  #fill { height: 100%; width: 0; background: linear-gradient(#e2b6ff, #8e44ad); }
+  #topRow, #manaRow { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: bold; }
+  #topRow { margin: 0 0 6px; }
+  #manaRow { margin: 8px 0 10px; font-size: 16px; }
+  #clock { min-width: 4.2em; } #clock.x2 { color: #8e44ad; }
+  .bar { flex: 1; height: 14px; border-radius: 8px; background: #5b3a1a; border: 3px solid #e0b84f; overflow: hidden; position: relative; }
+  #fill, #foeFill { height: 100%; width: 0; }
+  #fill { background: linear-gradient(#e2b6ff, #8e44ad); }
+  #foeFill { background: linear-gradient(#ff9a8a, #c0392b); }
   .bar::after { content: ""; position: absolute; inset: 0;
                 background: repeating-linear-gradient(90deg, transparent 0 calc(10% - 2px), rgba(0,0,0,.35) calc(10% - 2px) 10%); }
-  .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px 6px; }
   button { font: inherit; font-size: 13px; padding: 4px 2px; border: 3px solid #e0b84f; border-radius: 14px;
            background: linear-gradient(#fffdf5, #f3e3b5); color: inherit; cursor: pointer; box-shadow: 0 4px 0 #c49a3a; }
+  button.icon { padding: 0 6px; font-size: 16px; box-shadow: none; }
+  .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px 6px; }
+  .hand { grid-template-columns: repeat(4, 1fr) .75fr; align-items: end; }
   .cards button { position: relative; transition: transform .1s, filter .2s; }
-  .cards button .e { display: block; font-size: 24px; }
+  .cards .e { display: block; font-size: 24px; }
+  .cards small { display: block; font-size: 11px; opacity: .8; }
   .cards button.sel { transform: translateY(-3px); border-color: #c48a00; box-shadow: 0 7px 0 #c48a00, 0 0 0 3px #ffd84d; }
   .cards button.poor { filter: grayscale(.8); opacity: .6; }
+  .cards button.indeck { border-color: #27ae60; background: linear-gradient(#f0fff0, #c8f2c8); box-shadow: 0 4px 0 #1e8449; }
+  .cards button.locked { opacity: .45; cursor: default; }
+  .power { background: linear-gradient(#fffbe0, #ffe98a); }
+  #next { font-size: 11px; opacity: .75; border: 2px dashed #c49a3a; border-radius: 12px; padding: 2px 0; }
   .cost { position: absolute; top: -8px; right: -6px; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
-          background: #8e44ad; color: #fff; border: 2px solid #fff; font-size: 14px; font-weight: bold; }
+          background: #8e44ad; color: #fff; border: 2px solid #fff; font-size: 13px; font-weight: bold; }
   #ask { width: 100%; margin-top: 10px; font-size: 16px; padding: 6px; background: linear-gradient(#fff6d5, #f7d774); }
   #ask:disabled { opacity: .55; cursor: default; }
   dialog { border: 4px solid #e0b84f; border-radius: 20px; max-width: 420px; text-align: center; background: #fffaf0; color: inherit; }
   dialog[open] { animation: pop .25s ease-out; }
   dialog::backdrop { background: rgba(40, 25, 10, .45); }
   @keyframes pop { from { transform: scale(.7); opacity: 0; } }
-  dialog p { font-size: 20px; }
+  dialog p { font-size: 19px; }
   dialog button { display: block; width: 100%; margin: 10px 0; font-size: 20px; padding: 12px; }
   @media (prefers-reduced-motion: reduce) { dialog[open] { animation: none; } .cards button { transition: none; } }
 </style>
 </head>
 <body>
-<main>
+<section id="menu">
   <h1>⛺ Bitwa Dawida 🏯</h1>
-  <div id="foeRow"><span id="foeText">🏯 0</span>
-    <div class="bar" role="progressbar" aria-label="Manna przeciwnika" aria-valuemin="0" aria-valuemax="10"><div id="foeFill"></div></div></div>
+  <div class="panel" id="arena"></div>
+  <p class="label">Wybierz poziom i walcz:</p>
+  <div class="diffs" id="diffs"></div>
+  <p id="menuMsg"></p>
+  <p class="label">Twoja talia (<span id="deckCount">8</span>/8): dotknij karty, aby ją dodać lub zabrać</p>
+  <div class="cards" id="coll"></div>
+  <p><button id="sound" style="padding:8px 14px;font-size:15px">🔊 Dźwięk: włączony</button></p>
+</section>
+
+<main id="game" hidden>
+  <div id="topRow">
+    <span id="foeText">🏯 0</span>
+    <div class="bar" role="progressbar" aria-label="Manna przeciwnika" aria-valuemin="0" aria-valuemax="10"><div id="foeFill"></div></div>
+    <span id="clock">3:00</span><span id="crowns">👑 0:0</span>
+    <button id="mute" class="icon" aria-label="Włącz lub wyłącz dźwięk">🔊</button>
+  </div>
   <canvas id="c" aria-label="Pole bitwy. Wybierz kartę i dotknij pola."></canvas>
   <div id="manaRow"><span id="manaText">🍞 0</span>
     <div class="bar" role="progressbar" aria-label="Manna" aria-valuemin="0" aria-valuemax="10"><div id="fill"></div></div></div>
-  <div class="cards" id="cards"></div>
+  <div class="cards hand" id="hand"><div id="next"></div></div>
   <button id="ask">📖 Zagadka = +3 🍞</button>
 </main>
 <dialog id="dlg"></dialog>
 <script>
-const W = 360, H = 520, MAX_MANA = 10, MANA_PER_SEC = 0.5;
+const W = 360, H = 520, MAX_MANA = 10, MANA_PER_SEC = 0.5, TIME = 180, OVERTIME = 60;
 const BRIDGES = [W / 4, W * 3 / 4]; // przez rzekę można przejść tylko po mostach
 
-// dokąd iść teraz: prosto do celu, albo najpierw do najbliższego mostu i przez niego
-function waypoint(u, tx, ty) {
-  const below = u.y > H / 2;
-  if (below === ty > H / 2) return [tx, ty];
-  const bx = Math.abs(u.x - BRIDGES[0]) <= Math.abs(u.x - BRIDGES[1]) ? BRIDGES[0] : BRIDGES[1];
-  if (Math.abs(u.x - bx) > 4) return [bx, H / 2 + (below ? 24 : -24)]; // podejdź do wejścia na most
-  return [bx, H / 2 + (below ? -24 : 24)];                              // przejdź na drugą stronę
-}
-// me = Twoja postać, foe = postać przeciwnika o tych samych siłach
+// me = Twoja postać, foe = postać przeciwnika o tych samych siłach; type "power" = Boża moc, "building" = budowla
 const CARDS = [
-  { name: "Trębacz", me: "🎺", foe: "🐎", cost: 2, hp: 30,  dmg: 6,  range: 20,  speed: 70, info: "Bardzo szybki" },
-  { name: "Dawid",   me: "👦", foe: "🏹", cost: 3, hp: 45,  dmg: 9,  range: 100, speed: 40, info: "Rzuca kamieniami z procy" },
-  { name: "Gedeon",  me: "🏺", foe: "🐫", cost: 3, hp: 22,  dmg: 5,  range: 20,  speed: 60, count: 3, info: "3 wojowników naraz" },
-  { name: "Lew",     me: "🦁", foe: "🐺", cost: 4, hp: 90,  dmg: 15, range: 20,  speed: 55, info: "Silny i szybki" },
-  { name: "Eliasz",  me: "🔥", foe: "🐍", cost: 4, hp: 50,  dmg: 14, range: 110, speed: 35, info: "Ogień z nieba z daleka" },
-  { name: "Jozue",   me: "⚔️", foe: "🐗", cost: 4, hp: 80,  dmg: 10, range: 20,  speed: 45, siege: true, info: "Burzy mury: ×3 w wieżę" },
-  { name: "Samson",  me: "💪", foe: "🛡️", cost: 5, hp: 180, dmg: 22, range: 20,  speed: 28, info: "Najsilniejszy, ale wolny" },
-  { name: "Michał",  me: "👼", foe: "🐉", cost: 6, hp: 200, dmg: 25, range: 20,  speed: 50, info: "Archanioł: najmocniejszy" },
+  { id: "trebacz", name: "Trębacz", me: "🎺", foe: "🐎", cost: 2, hp: 30,  dmg: 6,  range: 20,  speed: 70, arena: 0, info: "Bardzo szybki" },
+  { id: "dawid",   name: "Dawid",   me: "👦", foe: "🏹", cost: 3, hp: 45,  dmg: 9,  range: 100, speed: 40, arena: 0, info: "Proca z daleka, trafia też latających" },
+  { id: "gedeon",  name: "Gedeon",  me: "🏺", foe: "🐫", cost: 3, hp: 22,  dmg: 5,  range: 20,  speed: 60, arena: 0, count: 3, info: "3 wojowników naraz" },
+  { id: "lew",     name: "Lew",     me: "🦁", foe: "🐺", cost: 4, hp: 90,  dmg: 15, range: 20,  speed: 55, arena: 0, info: "Silny i szybki" },
+  { id: "eliasz",  name: "Eliasz",  me: "🔥", foe: "🐍", cost: 4, hp: 50,  dmg: 14, range: 110, speed: 35, arena: 0, info: "Ogień z nieba z daleka" },
+  { id: "jozue",   name: "Jozue",   me: "⚔️", foe: "🐗", cost: 4, hp: 110, dmg: 10, range: 20,  speed: 45, arena: 0, siege: true, onlyBuildings: true, info: "Idzie tylko na wieże i mury, bije ×3" },
+  { id: "samson",  name: "Samson",  me: "💪", foe: "🛡️", cost: 5, hp: 180, dmg: 20, range: 20,  speed: 28, arena: 0, splash: 40, info: "Bije kilku wrogów naraz" },
+  { id: "grad",    name: "Grad",    me: "⛈️", type: "power", cost: 4, dmg: 60, radius: 50, arena: 0, info: "Boża moc: grad rani wrogów w kółku" },
+  { id: "blogo",   name: "Błogosł.", me: "🙏", type: "power", cost: 2, heal: 70, radius: 60, arena: 0, info: "Boża moc: błogosławieństwo leczy Twoich" },
+  { id: "golebica", name: "Gołębica", me: "🕊️", foe: "🦇", cost: 2, hp: 35, dmg: 7, range: 20, speed: 75, air: true, arena: 1, info: "Lata nad rzeką" },
+  { id: "mur",     name: "Mur",     me: "🧱", foe: "🪵", type: "building", cost: 3, hp: 320, arena: 1, info: "Mur Nehemiasza: zatrzymuje wrogów" },
+  { id: "michal",  name: "Michał",  me: "👼", foe: "🐉", cost: 6, hp: 200, dmg: 25, range: 20, speed: 50, air: true, arena: 2, info: "Archanioł: lata, najmocniejszy" },
+];
+const DEFAULT_DECK = ["trebacz", "dawid", "gedeon", "lew", "jozue", "samson", "grad", "blogo"];
+const ARENAS = [
+  { name: "🏜️ Pustynia",     min: 0,   tint: "rgba(230,190,110,.14)" },
+  { name: "🧱 Jerycho",       min: 100, tint: "rgba(200,110,60,.12)" },
+  { name: "🏛️ Jerozolima",    min: 250, tint: "rgba(110,120,210,.12)" },
+  { name: "🌈 Złote Miasto",  min: 500, tint: "rgba(255,215,0,.16)" },
+];
+// rate = jak szybko przeciwnik zbiera mannę, hp = siła jego postaci, smart = broni się tam, gdzie atakujesz
+const DIFFS = [
+  { name: "🐑 Łatwy",  rate: 0.9, hp: 1,    smart: false },
+  { name: "🦁 Średni", rate: 1.2, hp: 1.15, smart: true },
+  { name: "🐉 Trudny", rate: 1.6, hp: 1.35, smart: true },
 ];
 // first answer is the correct one
 const QUESTIONS = [
@@ -91,129 +131,347 @@ const QUESTIONS = [
   ["Co się stało z murami Jerycha, gdy zagrały trąby Jozuego?", "Upadły", "Urosły", "Zniknęły pod wodą"],
   ["Z iloma wojownikami Gedeon pokonał Madianitów?", "Z trzystoma", "Z tysiącem", "Z dwoma"],
   ["Kto przynosił prorokowi Eliaszowi jedzenie na pustyni?", "Kruki", "Lwy", "Rybacy"],
-];
-// rate = jak szybko przeciwnik zbiera mannę, hp = siła jego postaci, smart = broni się tam, gdzie atakujesz
-const LEVELS = [
-  { name: "🐑 Łatwy",  rate: 0.9,  hp: 1,   smart: false },
-  { name: "🦁 Średni", rate: 1.2,  hp: 1.15, smart: true },
-  { name: "🐉 Trudny", rate: 1.6,  hp: 1.35, smart: true },
+  ["Jakiego ptaka wypuścił Noe z arki?", "Gołębicę", "Orła", "Wronę"],
+  ["Kto odbudował mury Jerozolimy?", "Nehemiasz", "Samson", "Jonasz"],
+  ["Czym Bóg karmił Izraelitów na pustyni?", "Manną z nieba", "Pizzą", "Jabłkami"],
 ];
 const EMOJI_FONT = "'Trebuchet MS','Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif";
 
-const canvas = document.getElementById("c"), ctx = canvas.getContext("2d");
-const dlg = document.getElementById("dlg"), askBtn = document.getElementById("ask");
-const foeFill = document.getElementById("foeFill"), foeText = document.getElementById("foeText");
-const fill = document.getElementById("fill"), manaText = document.getElementById("manaText"), bar = fill.parentElement;
+const $ = id => document.getElementById(id);
+const canvas = $("c"), ctx = canvas.getContext("2d"), dlg = $("dlg"), askBtn = $("ask");
 const say = t => { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang = "pl-PL"; speechSynthesis.speak(u); };
 const shuffle = a => a.map(v => [Math.random(), v]).sort((x, y) => x[0] - y[0]).map(p => p[1]);
+const clamp = (v, a, b) => Math.min(Math.max(v, a), b);
+const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+const byId = id => CARDS.find(c => c.id === id);
 const calm = matchMedia("(prefers-reduced-motion: reduce)").matches; // bez trzęsienia ekranu
 
-// ostry obraz na ekranach Retina
+// --- zapis postępu (puchary, karty, talia) w przeglądarce ---
+const SAVE = "bitwa-dawida-v1";
+let save = null;
+try { save = JSON.parse(localStorage.getItem(SAVE)); } catch {}
+if (!save || !save.cards) save = { trophies: 0, best: 0, deck: [...DEFAULT_DECK], cards: {}, sound: true };
+CARDS.forEach(c => save.cards[c.id] ??= { lvl: 1, copies: 0 });
+const store = () => { try { localStorage.setItem(SAVE, JSON.stringify(save)); } catch {} };
+const arenaIdx = () => ARENAS.reduce((a, ar, i) => save.best >= ar.min ? i : a, 0); // areny nie cofają się po porażce
+const unlocked = c => c.arena <= arenaIdx();
+save.deck = save.deck.filter(id => byId(id) && unlocked(byId(id)));
+const need = lvl => lvl * 2;                                // ile kopii trzeba na następny poziom
+const mult = id => 1 + 0.08 * (save.cards[id].lvl - 1);   // każdy poziom +8% siły
+
+// --- dźwięk: wszystko generowane w przeglądarce, bez plików ---
+let ac = null, master = null;
+function initAudio() {
+  if (!ac) try { ac = new (window.AudioContext || window.webkitAudioContext)(); master = ac.createGain(); master.connect(ac.destination); } catch { ac = null; }
+  if (ac) { ac.resume(); master.gain.value = save.sound ? 1 : 0; }
+}
+function tone(freq, dur, type = "sine", vol = 0.15, delay = 0, slide = 0) {
+  if (!ac) return;
+  const t = ac.currentTime + delay, o = ac.createOscillator(), g = ac.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, t);
+  if (slide) o.frequency.exponentialRampToValueAtTime(slide, t + dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g).connect(master); o.start(t); o.stop(t + dur);
+}
+function noise(dur, vol) {
+  if (!ac) return;
+  const buf = ac.createBuffer(1, ac.sampleRate * dur, ac.sampleRate), d = buf.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
+  const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+  s.buffer = buf; f.type = "lowpass"; f.frequency.value = 700; g.gain.value = vol;
+  s.connect(f).connect(g).connect(master); s.start();
+}
+const SFX = {
+  spawn: () => tone(500, 0.15, "sine", 0.12, 0, 1000),
+  hit:   () => tone(140, 0.06, "square", 0.04),
+  shoot: () => tone(900, 0.1, "triangle", 0.05, 0, 400),
+  boom:  () => noise(0.6, 0.4),
+  bless: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.4, "sine", 0.08, i * 0.08)),
+  win:   () => [523, 659, 784, 1047, 784, 1047].forEach((f, i) => tone(f, 0.3, "triangle", 0.12, i * 0.15)),
+  lose:  () => [392, 349, 330, 262].forEach((f, i) => tone(f, 0.4, "triangle", 0.1, i * 0.2)),
+};
+const lastSfx = {};
+function sfx(n) {
+  if (!ac || !save.sound) return;
+  if (ac.currentTime - (lastSfx[n] || 0) < 0.06) return; // nie sto trafień naraz
+  lastSfx[n] = ac.currentTime; SFX[n]();
+}
+const MELODY = [523, 587, 659, 784, 659, 587, 523, 440, 392, 440, 523, 587, 523, 440, 392, 0];
+let beat = 0, musicTimer = 0;
+function music(on) {
+  clearInterval(musicTimer);
+  if (on) musicTimer = setInterval(() => {
+    if (!ac || !save.sound || paused) return;
+    const f = MELODY[beat % MELODY.length];
+    if (f) tone(f, 0.35, "triangle", 0.03);
+    if (beat % 4 === 0) tone(196, 0.6, "sine", 0.04);
+    beat++;
+  }, 300);
+}
+function setSound(on) {
+  save.sound = on; store();
+  if (master) master.gain.value = on ? 1 : 0;
+  $("sound").textContent = on ? "🔊 Dźwięk: włączony" : "🔇 Dźwięk: wyłączony";
+  $("mute").textContent = on ? "🔊" : "🔇";
+}
+$("sound").onclick = () => { initAudio(); setSound(!save.sound); };
+$("mute").onclick = () => setSound(!save.sound);
+setSound(save.sound);
+
+// --- menu: arena, poziom trudności, talia ---
+function renderMenu() {
+  const ai = arenaIdx(), nx = ARENAS[ai + 1];
+  $("arena").innerHTML = `<div style="font-size:22px">Arena: ${ARENAS[ai].name}</div>
+    <div>🏆 ${save.trophies} pucharów${nx ? ` · do areny ${nx.name}: jeszcze ${nx.min - save.best} 🏆` : " · to najwyższa arena!"}</div>`;
+  $("deckCount").textContent = save.deck.length;
+  const coll = $("coll"); coll.innerHTML = "";
+  for (const c of CARDS) {
+    const s = save.cards[c.id], open = unlocked(c), inDeck = save.deck.includes(c.id), b = document.createElement("button");
+    b.className = [inDeck && "indeck", !open && "locked", c.type === "power" && "power"].filter(Boolean).join(" ");
+    b.innerHTML = `<span class="cost">${c.cost}</span><span class="e">${open ? c.me : "🔒"}</span>${c.name}
+      <small>${open ? `Poz. ${s.lvl} · ${s.copies}/${need(s.lvl)}` : ARENAS[c.arena].name}</small>`;
+    b.setAttribute("aria-label", open ? `${c.name}, ${c.info}, poziom ${s.lvl}, ${inDeck ? "w talii" : "poza talią"}` : `${c.name}, zablokowana`);
+    b.disabled = !open;
+    b.onclick = () => {
+      if (inDeck) save.deck = save.deck.filter(x => x !== c.id);
+      else if (save.deck.length >= 8) return ($("menuMsg").textContent = "Talia ma już 8 kart. Najpierw zabierz jedną.");
+      else save.deck.push(c.id);
+      $("menuMsg").textContent = c.info;
+      store(); renderMenu();
+    };
+    coll.append(b);
+  }
+  document.querySelectorAll("#diffs button").forEach(b => b.disabled = save.deck.length !== 8);
+  if (save.deck.length !== 8) $("menuMsg").textContent = `Talia musi mieć 8 kart (teraz ${save.deck.length}).`;
+}
+DIFFS.forEach(d => {
+  const b = document.createElement("button");
+  b.textContent = d.name;
+  b.onclick = () => start(d);
+  $("diffs").append(b);
+});
+renderMenu();
+
+// --- pole bitwy ---
 const dpr = Math.min(2, window.devicePixelRatio || 1);
 canvas.width = W * dpr; canvas.height = H * dpr; ctx.scale(dpr, dpr);
-
-// tło rysowane raz: trawa, droga, kwiatki
 const bg = document.createElement("canvas");
 bg.width = W * dpr; bg.height = H * dpr;
-{
+{ // tło rysowane raz: trawa, drogi, kwiatki, kolor areny
   const b = bg.getContext("2d"); b.scale(dpr, dpr);
   const g = b.createLinearGradient(0, 0, 0, H);
   g.addColorStop(0, "#86c262"); g.addColorStop(0.5, "#a8d88a"); g.addColorStop(1, "#b9e39a");
   b.fillStyle = g; b.fillRect(0, 0, W, H);
   b.fillStyle = "rgba(120,60,40,.08)"; b.fillRect(0, 0, W, H / 2);
   for (let i = 0; i < 300; i++) { b.fillStyle = `rgba(50,110,35,${0.15 + Math.random() * 0.25})`; b.fillRect(Math.random() * W, Math.random() * H, 2, 5); }
-  b.strokeStyle = "rgba(227,207,150,.75)"; b.lineWidth = 34; b.lineJoin = b.lineCap = "round";
-  for (const bx of BRIDGES) { b.beginPath(); b.moveTo(W / 2, 60); b.lineTo(bx, H / 2 - 40); b.lineTo(bx, H / 2 + 40); b.lineTo(W / 2, H - 60); b.stroke(); }
+  b.strokeStyle = "rgba(227,207,150,.75)"; b.lineWidth = 30; b.lineJoin = b.lineCap = "round";
+  for (const bx of BRIDGES) { b.beginPath(); b.moveTo(W / 2, 40); b.lineTo(bx, 108); b.lineTo(bx, H - 108); b.lineTo(W / 2, H - 40); b.stroke(); }
   b.font = `15px ${EMOJI_FONT}`; b.textAlign = "center";
-  [[30, 150], [320, 200], [50, 330], [300, 420], [80, 470], [290, 90], [24, 250], [338, 300], [140, 120], [230, 400]]
+  [[24, 170], [336, 200], [40, 330], [320, 420], [150, 470], [300, 60], [20, 250], [338, 300], [180, 150], [190, 380]]
     .forEach(([x, y], i) => b.fillText(["🌼", "🌷", "🌿"][i % 3], x, y));
+  b.fillStyle = ARENAS[arenaIdx()].tint; b.fillRect(0, 0, W, H);
 }
 
-const tower = (side, y, emoji) => ({ side, x: W / 2, y, hp: 500, max: 500, dmg: 10, range: 120, speed: 0, emoji, cd: 0, tower: true, flash: 0 });
-const myTower = tower(0, H - 44, "⛺"), foeTower = tower(1, 44, "🏯");
-let units = [myTower, foeTower], shots = [], fx = [];
-let level = LEVELS[0], mana = 5, foeMana = 5, foeNext = 0, selected = 0, paused = true, askCd = 0, over = false;
+const mkTower = (side, x, y, king) => ({ side, x, y, hp: king ? 600 : 350, max: king ? 600 : 350, dmg: king ? 12 : 9, range: king ? 125 : 115,
+  speed: 0, emoji: side ? (king ? "🏯" : "🗼") : (king ? "⛺" : "🛖"), cd: 0, tower: true, king, active: !king, flash: 0 });
+const towers = [
+  mkTower(0, W / 2, H - 40, true), mkTower(0, W / 4, H - 108, false), mkTower(0, W * 3 / 4, H - 108, false),
+  mkTower(1, W / 2, 40, true),     mkTower(1, W / 4, 108, false),     mkTower(1, W * 3 / 4, 108, false),
+];
+let units = [...towers], shots = [], fx = [];
+let diff = DIFFS[0], mana = 5, foeMana = 5, foeNext = null, paused = true, askCd = 0, over = false, time = 0;
+let cycle = [], hand = [], selected = 0;
 let msg = "", msgT = 0, T = 0, shake = 0, nextId = 0;
-const flash = t => { msg = t; msgT = 1.5; };
+const notice = t => { msg = t; msgT = 1.5; };
+
+// korony zdobyte przez stronę `side`: 1 za boczną wieżę, 3 za główną
+const crownsOf = side => {
+  const enemy = towers.filter(t => t.side !== side);
+  return enemy.find(t => t.king).hp <= 0 ? 3 : enemy.filter(t => t.hp <= 0).length;
+};
+
+// dokąd iść teraz: prosto do celu, albo najpierw do najbliższego mostu i przez niego
+function waypoint(u, tx, ty) {
+  const below = u.y > H / 2;
+  if (u.air || below === ty > H / 2) return [tx, ty];
+  const bx = Math.abs(u.x - BRIDGES[0]) <= Math.abs(u.x - BRIDGES[1]) ? BRIDGES[0] : BRIDGES[1];
+  if (Math.abs(u.x - bx) > 10) return [bx, H / 2 + (below ? 24 : -24)]; // podejdź do wejścia na most
+  return [bx, H / 2 + (below ? -24 : 24)];                               // przejdź na drugą stronę
+}
+
+// kto kogo może zaatakować: latających trafiają tylko strzelający, wieże i inni latający
+const canHit = (u, o) => (!o.air || u.air || u.range > 50 || u.tower) && (!u.onlyBuildings || o.tower || o.building);
 
 // --- efekty ---
-function burst(x, y, n, colors, { speed = 80, life = 0.6, size = 4, g = 0, up = 0 } = {}) {
+function burst(x, y, n, colors, { speed = 80, life = 0.6, size = 4 } = {}) {
   for (let i = 0; i < n; i++) {
     const a = Math.random() * Math.PI * 2, s = speed * (0.3 + Math.random());
-    fx.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - up, life, max: life, color: colors[i % colors.length], size, g });
+    fx.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life, max: life, color: colors[i % colors.length], size });
   }
 }
 const floatText = (x, y, text, color, size = 16, outline = true) => fx.push({ x, y, vx: 0, vy: -45, life: 0.9, max: 0.9, text, color, size, outline });
+const ring = (x, y, color, r = 36) => fx.push({ x, y, ring: true, r, life: 0.5, max: 0.5, color });
 
 function damage(t, dmg) {
   if (t.hp <= 0) return;
+  dmg = Math.round(dmg);
   t.hp -= dmg; t.flash = 0.15;
+  if (t.king) t.active = true; // główna wieża budzi się, gdy ktoś ją zaatakuje
   floatText(t.x + (Math.random() - 0.5) * 16, t.y - 22, "-" + dmg, t.side ? "#fff" : "#ffd2d2", 15);
+  sfx("hit");
   if (t.tower && !calm) shake = Math.max(shake, 0.15);
   if (t.hp > 0) return;
-  if (t.tower) { burst(t.x, t.y, 70, ["#e67e22", "#f1c40f", "#7f8c8d", "#c0392b"], { speed: 220, life: 1.2, size: 6 }); shake = calm ? 0 : 0.6; }
-  else { burst(t.x, t.y, 14, ["#ecf0f1", "#bdc3c7", "#fff"], { speed: 60, size: 6 }); fx.push({ x: t.x, y: t.y, vx: 0, vy: -25, life: 0.7, max: 0.7, text: "💨", size: 26 }); }
+  if (t.tower) {
+    burst(t.x, t.y, 70, ["#e67e22", "#f1c40f", "#7f8c8d", "#c0392b"], { speed: 220, life: 1.2, size: 6 });
+    shake = calm ? 0 : 0.6; sfx("boom");
+    towers.forEach(k => { if (k.king && k.side === t.side) k.active = true; });
+  } else {
+    burst(t.x, t.y, 14, ["#ecf0f1", "#bdc3c7", "#fff"], { speed: 60, size: 6 });
+    fx.push({ x: t.x, y: t.y, vx: 0, vy: -25, life: 0.7, max: 0.7, text: "💨", size: 26 });
+  }
 }
 
 function attack(u, t) {
-  if (u.range > 50) shots.push({ x: u.x, y: u.y - 10, px: u.x, py: u.y - 10, t, dmg: u.dmg, color: u.side ? "#c0392b" : "#95a5a6" });
-  else { damage(t, t.tower && u.siege ? u.dmg * 3 : u.dmg); burst((u.x + t.x) / 2, (u.y + t.y) / 2, 6, ["#fff", "#f1c40f"], { speed: 90, life: 0.3, size: 3 }); }
+  if (u.range > 50) { shots.push({ x: u.x, y: u.y - 10, px: u.x, py: u.y - 10, t, dmg: u.dmg, color: u.side ? "#c0392b" : "#95a5a6" }); sfx("shoot"); return; }
+  damage(t, (t.tower || t.building) && u.siege ? u.dmg * 3 : u.dmg);
+  if (u.splash) for (const o of units)
+    if (o !== t && o.side !== u.side && o.hp > 0 && !o.tower && canHit(u, o) && dist(o, t) < u.splash) damage(o, u.dmg);
+  burst((u.x + t.x) / 2, (u.y + t.y) / 2, u.splash ? 14 : 6, ["#fff", "#f1c40f"], { speed: u.splash ? 140 : 90, life: 0.3, size: 3 });
+  if (u.splash) ring(t.x, t.y, "#fff", u.splash);
 }
 
-function spawn(side, card, x, y) {
-  const c = CARDS[card];
-  const n = c.count || 1, hp = Math.round(c.hp * (side ? level.hp : 1));
+function spawn(side, c, x, y, m = 1) {
+  if (c.type === "power") return power(side, c, x, y, m);
+  const n = c.count || 1, hp = Math.round(c.hp * m);
   for (let k = 0; k < n; k++)
-    units.push({ id: nextId++, side, x: x + (k - (n - 1) / 2) * 24, y, hp, max: hp, dmg: c.dmg, range: c.range, speed: c.speed,
-                 siege: c.siege, emoji: side ? c.foe : c.me, cd: 0, flash: 0 });
-  fx.push({ x, y: y + 12, ring: true, life: 0.5, max: 0.5, color: side ? "#e74c3c" : "#3498db" });
+    units.push({ id: nextId++, side, x: x + (k - (n - 1) / 2) * 24, y, hp, max: hp, dmg: Math.round((c.dmg || 0) * m), range: c.range || 0,
+                 speed: c.speed || 0, air: c.air, building: c.type === "building", splash: c.splash, siege: c.siege,
+                 onlyBuildings: c.onlyBuildings, emoji: side ? c.foe : c.me, cd: 0, flash: 0 });
+  ring(x, y + 12, side ? "#e74c3c" : "#3498db");
   for (let i = 0; i < 3; i++) fx.push({ x: x + (Math.random() - 0.5) * 30, y: y + (Math.random() - 0.5) * 20, vx: 0, vy: -30, life: 0.6, max: 0.6, text: "✨", size: 14 });
+  sfx("spawn");
 }
 
-// --- karty i sterowanie ---
-const cardBtns = CARDS.map((c, i) => {
+// Boża moc: grad rani wrogów, błogosławieństwo leczy swoich
+function power(side, c, x, y, m) {
+  if (c.heal) {
+    for (const o of units) if (o.side === side && !o.tower && o.hp > 0 && dist(o, { x, y }) < c.radius) {
+      const h = Math.round(c.heal * m); o.hp = Math.min(o.max, o.hp + h); floatText(o.x, o.y - 24, "+" + h, "#2ecc71", 15);
+    }
+    ring(x, y, "#f1c40f", c.radius); burst(x, y, 24, ["#f1c40f", "#fff6b0", "#fff"], { speed: 90, life: 0.9 });
+    for (let i = 0; i < 6; i++) fx.push({ x: x + (Math.random() - 0.5) * c.radius, y: y + (Math.random() - 0.5) * c.radius, vx: 0, vy: -35, life: 0.9, max: 0.9, text: "✨", size: 16 });
+    sfx("bless");
+  } else {
+    for (let i = 0; i < 16; i++) fx.push({ x: x + (Math.random() - 0.5) * c.radius * 1.6, y: y - 90 - Math.random() * 40, vx: 0, vy: 380, life: 0.3, max: 0.3, text: "🧊", size: 14 });
+    ring(x, y, "#dff4ff", c.radius); burst(x, y, 20, ["#dff4ff", "#a9d6f5", "#fff"], { speed: 120, life: 0.5 });
+    for (const o of units) if (o.side !== side && o.hp > 0 && dist(o, { x, y }) < c.radius) damage(o, c.dmg * m * (o.tower ? 0.4 : 1));
+    if (!calm) shake = Math.max(shake, 0.2);
+    sfx("boom");
+  }
+}
+
+// --- ręka 4 kart z talii 8 ---
+const handBtns = [0, 1, 2, 3].map(i => {
   const b = document.createElement("button");
-  b.innerHTML = `<span class="cost">${c.cost}</span><span class="e">${c.me}</span>${c.name}`;
-  b.setAttribute("aria-label", `${c.name}, koszt ${c.cost} manny`);
-  b.onclick = () => { selected = i; cardBtns.forEach((x, j) => x.classList.toggle("sel", j === i)); };
-  document.getElementById("cards").append(b);
+  b.onclick = () => { selected = i; renderHand(); };
+  $("hand").insertBefore(b, $("next"));
   return b;
 });
-cardBtns[0].classList.add("sel");
+function renderHand() {
+  hand.forEach((id, i) => {
+    const c = byId(id), b = handBtns[i];
+    if (b.dataset.id !== id) { // DOM zmieniany tylko gdy trzeba (podmiana co klatkę gubi kliknięcia w Safari)
+      b.dataset.id = id;
+      b.innerHTML = `<span class="cost">${c.cost}</span><span class="e">${c.me}</span>${c.name}`;
+      b.setAttribute("aria-label", `${c.name}, koszt ${c.cost} manny. ${c.info}`);
+      b.classList.toggle("power", c.type === "power");
+    }
+    b.classList.toggle("sel", i === selected);
+  });
+  const n = byId(cycle[0]);
+  $("next").innerHTML = `<small>Następna</small><span class="e">${n.me}</span>`;
+}
 
 canvas.addEventListener("pointerdown", e => {
   if (paused || over) return;
-  if (mana < CARDS[selected].cost) return flash(`Czekaj na mannę 🍞 (potrzeba ${CARDS[selected].cost})`);
+  const c = byId(hand[selected]);
+  if (mana < c.cost) return notice(`Czekaj na mannę 🍞 (potrzeba ${c.cost})`);
   const r = canvas.getBoundingClientRect();
-  const x = (e.clientX - r.left) * W / r.width, y = (e.clientY - r.top) * H / r.height;
-  mana -= CARDS[selected].cost;
-  // klik na górnej połowie też działa: postać staje tuż przy rzece
-  spawn(0, selected, Math.min(Math.max(x, 20), W - 20), Math.min(Math.max(y, H / 2 + 30), H - 20));
+  let x = clamp((e.clientX - r.left) * W / r.width, 20, W - 20), y = (e.clientY - r.top) * H / r.height;
+  if (c.type !== "power") y = clamp(y, H / 2 + 30, H - 20); // postacie i mury tylko na Twojej połowie
+  mana -= c.cost;
+  spawn(0, c, x, y, mult(c.id));
+  hand[selected] = cycle.shift(); cycle.push(c.id);
+  renderHand();
 });
 
-// --- logika ---
-function step(dt) {
-  mana = Math.min(MAX_MANA, mana + MANA_PER_SEC * dt);
-  foeMana = Math.min(MAX_MANA, foeMana + MANA_PER_SEC * dt * level.rate);
-  askCd = Math.max(0, askCd - dt);
-  if (foeMana >= CARDS[foeNext].cost) {
-    foeMana -= CARDS[foeNext].cost;
-    // sprytny przeciwnik stawia postać naprzeciw Twojej, która jest najbliżej jego wieży
-    const threat = level.smart && units.filter(u => !u.side && !u.tower).sort((a, b) => a.y - b.y)[0];
-    spawn(1, foeNext, threat ? Math.min(Math.max(threat.x, 40), W - 40) : 40 + Math.random() * (W - 80), threat ? Math.max(90, Math.min(threat.y - 70, 200)) : 110);
-    foeNext = Math.floor(Math.random() * CARDS.length);
+// --- przeciwnik ---
+const foeMult = () => diff.hp * (1 + 0.08 * arenaIdx());
+const foePick = () => { const p = CARDS.filter(c => unlocked(c) && !c.heal); return p[Math.floor(Math.random() * p.length)]; };
+function foeTurn() {
+  const c = foeNext;
+  if (foeMana < c.cost) return;
+  let x, y;
+  if (c.type === "power") { // grad tam, gdzie stoi najwięcej Twoich postaci
+    let most = 0;
+    for (const u of units) if (!u.side && !u.tower) {
+      const n = units.filter(o => !o.side && !o.tower && dist(o, u) < c.radius).length;
+      if (n > most) { most = n; x = u.x; y = u.y; }
+    }
+    if (most < 2) { foeNext = foePick(); return; } // nie warto, weź inną kartę
+  } else {
+    // sprytny przeciwnik stawia postać naprzeciw Twojej, która zaszła najdalej
+    const threat = diff.smart && units.filter(u => !u.side && !u.tower && !u.building).sort((a, b) => a.y - b.y)[0];
+    if (threat) { x = clamp(threat.x, 30, W - 30); y = clamp(threat.y - 70, 80, H / 2 - 30); }
+    else { x = BRIDGES[Math.random() < 0.5 ? 0 : 1] + (Math.random() - 0.5) * 60; y = c.type === "building" ? 170 : 130; }
   }
+  foeMana -= c.cost;
+  spawn(1, c, x, y, foeMult());
+  foeNext = foePick();
+}
+
+// --- logika ---
+function separate() { // postacie się przepychają, zamiast stać jedna na drugiej
+  const mob = units.filter(u => !u.tower && !u.building && u.hp > 0);
+  for (let i = 0; i < mob.length; i++) for (let j = i + 1; j < mob.length; j++) {
+    const a = mob[i], b = mob[j];
+    if (!a.air !== !b.air) continue;
+    let dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy);
+    if (d >= 18) continue;
+    if (d < 0.01) { dx = Math.random() - 0.5; dy = 0.1; d = Math.hypot(dx, dy); }
+    const p = (18 - d) / 2 / d;
+    a.x -= dx * p; a.y -= dy * p; b.x += dx * p; b.y += dy * p;
+  }
+  for (const u of mob) { // nikt nie zostaje wepchnięty do wody
+    u.x = clamp(u.x, 10, W - 10);
+    if (!u.air && Math.abs(u.y - H / 2) < 14 && Math.min(...BRIDGES.map(b => Math.abs(u.x - b))) > 22) u.y = u.y > H / 2 ? H / 2 + 14 : H / 2 - 14;
+  }
+}
+
+function step(dt) {
+  time += dt;
+  const rate = MANA_PER_SEC * (time > TIME - 60 ? 2 : 1); // ostatnia minuta i dogrywka: manna 2× szybciej
+  mana = Math.min(MAX_MANA, mana + rate * dt);
+  foeMana = Math.min(MAX_MANA, foeMana + rate * dt * diff.rate);
+  askCd = Math.max(0, askCd - dt);
+  foeTurn();
   for (const u of units) {
     u.flash -= dt; u.cd -= dt; u.moving = false;
+    if (u.building) { u.hp -= u.max / 40 * dt; continue; } // mur sam się kruszy w 40 s
+    if (u.tower && (!u.active || u.hp <= 0)) continue;
     let target = null, best = Infinity;
     for (const o of units) {
-      if (o.side === u.side || o.hp <= 0) continue;
-      const d = Math.hypot(o.x - u.x, o.y - u.y);
+      if (o.side === u.side || o.hp <= 0 || !canHit(u, o)) continue;
+      const d = dist(o, u);
       if (d < best) { best = d; target = o; }
     }
-    if (!u.tower && best > 140) { target = u.side ? myTower : foeTower; best = Math.hypot(target.x - u.x, target.y - u.y); }
+    if (u.tower) { if (best > u.range) continue; }
+    else if (!target || best > 140) { // nikogo w pobliżu: idź do najbliższej wieży przeciwnika
+      target = null; best = Infinity;
+      for (const o of towers) if (o.side !== u.side && o.hp > 0 && dist(o, u) < best) { best = dist(o, u); target = o; }
+    }
     if (!target) continue;
-    const reach = u.range + (target.tower ? 30 : 16);
+    const reach = u.range + (target.tower ? 30 : target.building ? 22 : 16);
     if (best > reach) {
       if (u.speed) {
         const [wx, wy] = waypoint(u, target.x, target.y), wd = Math.hypot(wx - u.x, wy - u.y) || 1;
@@ -221,44 +479,54 @@ function step(dt) {
       }
     } else if (u.cd <= 0) { attack(u, target); u.cd = 1; }
   }
+  separate();
   for (const s of shots) {
-    const d = Math.hypot(s.t.x - s.x, s.t.y - s.y);
+    const d = dist(s.t, s);
     s.px = s.x; s.py = s.y;
     if (d < 10 || s.t.hp <= 0) { s.done = true; damage(s.t, s.dmg); continue; }
     s.x += (s.t.x - s.x) / d * 320 * dt; s.y += (s.t.y - s.y) / d * 320 * dt;
   }
   shots = shots.filter(s => !s.done);
   units = units.filter(u => u.hp > 0 || u.tower);
-  if (myTower.hp <= 0 || foeTower.hp <= 0) end(foeTower.hp <= 0);
+
+  const me = crownsOf(0), foe = crownsOf(1);
+  if (me === 3 || foe === 3) return end(me === 3 ? "win" : "lose");
+  if (time >= TIME && me !== foe) return end(me > foe ? "win" : "lose"); // po czasie lub w dogrywce: kto ma więcej koron
+  if (time >= TIME + OVERTIME) return end("draw");
 }
 
 // --- rysowanie ---
 function drawUnit(u) {
-  const bob = u.moving ? Math.abs(Math.sin(T * 9 + u.id)) * 4 : 0;
+  const lift = u.air ? 14 : 0, bob = (u.moving || u.air ? Math.abs(Math.sin(T * 9 + (u.id || 0))) * 4 : 0) + lift;
   ctx.fillStyle = "rgba(0,0,0,.22)";
-  ctx.beginPath(); ctx.ellipse(u.x, u.y + (u.tower ? 26 : 14), u.tower ? 36 : 13, u.tower ? 9 : 4, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(u.x, u.y + (u.tower ? 26 : 14), u.tower ? 32 : u.air ? 9 : 13, u.tower ? 8 : u.air ? 3 : 4, 0, 0, Math.PI * 2); ctx.fill();
   if (!u.tower) {
     ctx.strokeStyle = u.side ? "rgba(231,76,60,.9)" : "rgba(52,152,219,.95)"; ctx.lineWidth = 3;
     ctx.beginPath(); ctx.ellipse(u.x, u.y + 14, 16, 5, 0, 0, Math.PI * 2); ctx.stroke();
   }
   if (u.flash > 0) {
     ctx.fillStyle = `rgba(255,70,70,${u.flash * 4})`;
-    ctx.beginPath(); ctx.arc(u.x, u.y - bob, u.tower ? 32 : 17, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(u.x, u.y - bob, u.tower ? 30 : 17, 0, Math.PI * 2); ctx.fill();
   }
-  const jig = u.tower && u.flash > 0 ? (Math.random() - 0.5) * 4 : 0;
-  ctx.font = `${u.tower ? 52 : 28}px ${EMOJI_FONT}`;
+  const jig = u.tower && u.flash > 0 ? (Math.random() - 0.5) * 4 : 0, size = u.tower ? (u.king ? 50 : 40) : u.building ? 32 : 28;
+  ctx.font = `${size}px ${EMOJI_FONT}`;
   ctx.fillStyle = "#000"; // emoji przejmują przezroczystość koloru wypełnienia
   ctx.fillText(u.hp > 0 ? u.emoji : "🔥", u.x + jig, u.y - bob);
-  const w = u.tower ? 84 : 32, h = u.tower ? 8 : 5, top = u.y - (u.tower ? 40 : 24) - bob;
+  if (u.tower && u.king && !u.active && u.hp > 0) { ctx.font = `16px ${EMOJI_FONT}`; ctx.fillText("💤", u.x + 30, u.y - 28); }
+  if (u.tower && u.hp <= 0) return;
+  const w = u.tower ? (u.king ? 80 : 60) : 32, h = u.tower ? 7 : 5, top = u.y - (u.tower ? 36 : 24) - bob;
   ctx.fillStyle = "#2c2c2c"; ctx.fillRect(u.x - w / 2 - 1, top - 1, w + 2, h + 2);
   ctx.fillStyle = u.side ? "#e74c3c" : "#3498db"; ctx.fillRect(u.x - w / 2, top, w * Math.max(0, u.hp) / u.max, h);
 }
+
+const lastText = {};
+const setText = (id, t) => { if (lastText[id] !== t) { lastText[id] = t; $(id).textContent = t; } };
 
 function draw() {
   ctx.save();
   if (shake > 0) ctx.translate((Math.random() - 0.5) * shake * 24, (Math.random() - 0.5) * shake * 24);
   ctx.drawImage(bg, 0, 0, W, H);
-  // rzeka Jordan z falami i mostem
+  // rzeka Jordan z falami i mostami
   const ry = H / 2, rg = ctx.createLinearGradient(0, ry - 10, 0, ry + 10);
   rg.addColorStop(0, "#4a9fd8"); rg.addColorStop(0.5, "#86ccf5"); rg.addColorStop(1, "#4a9fd8");
   ctx.fillStyle = rg; ctx.fillRect(0, ry - 10, W, 20);
@@ -270,14 +538,14 @@ function draw() {
     ctx.strokeStyle = "#6b3410"; ctx.lineWidth = 2;
     for (let x = bx - 25; x <= bx + 25; x += 10) { ctx.beginPath(); ctx.moveTo(x, ry - 14); ctx.lineTo(x, ry + 14); ctx.stroke(); }
   }
-
   ctx.textAlign = "center"; ctx.textBaseline = "middle";
-  if (!over && mana >= CARDS[selected].cost) { // podpowiedź: tu możesz postawić wybraną postać
-    ctx.font = `16px ${EMOJI_FONT}`; ctx.fillStyle = `rgba(0,0,0,${0.35 + 0.15 * Math.sin(T * 4)})`;
-    ctx.fillText(`Dotknij tutaj, aby postawić: ${CARDS[selected].me} ${CARDS[selected].name}`, W / 2, H / 2 + 40);
-    ctx.font = `14px ${EMOJI_FONT}`; ctx.fillText(CARDS[selected].info, W / 2, H / 2 + 60);
+  const sel = hand.length && byId(hand[selected]);
+  if (sel && !over && !paused && mana >= sel.cost) { // podpowiedź: co i gdzie możesz postawić
+    ctx.font = `15px ${EMOJI_FONT}`; ctx.fillStyle = `rgba(0,0,0,${0.35 + 0.15 * Math.sin(T * 4)})`;
+    ctx.fillText(sel.type === "power" ? `Dotknij, gdzie zesłać: ${sel.me} ${sel.name}` : `Dotknij tutaj, aby postawić: ${sel.me} ${sel.name}`, W / 2, H / 2 + 40);
+    ctx.font = `13px ${EMOJI_FONT}`; ctx.fillText(sel.info, W / 2, H / 2 + 58);
   }
-  [...units].sort((a, b) => a.y - b.y).forEach(drawUnit); // bliższe postacie na wierzchu
+  [...units].sort((a, b) => (a.air ? 1 : 0) - (b.air ? 1 : 0) || a.y - b.y).forEach(drawUnit); // latający nad resztą, bliżsi na wierzchu
 
   for (const s of shots) {
     ctx.strokeStyle = s.color; ctx.globalAlpha = 0.5; ctx.lineWidth = 3;
@@ -289,7 +557,7 @@ function draw() {
     ctx.globalAlpha = Math.max(0, Math.min(1, p.life / p.max * 1.5));
     if (p.ring) {
       ctx.strokeStyle = p.color; ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.arc(p.x, p.y, (1 - p.life / p.max) * 36 + 6, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(p.x, p.y, (1 - p.life / p.max) * p.r + 6, 0, Math.PI * 2); ctx.stroke();
     } else if (p.text) {
       ctx.font = `bold ${p.size}px ${EMOJI_FONT}`;
       if (p.outline) { ctx.strokeStyle = "#000"; ctx.lineWidth = 3; ctx.strokeText(p.text, p.x, p.y); }
@@ -305,20 +573,30 @@ function draw() {
   }
   ctx.restore();
 
-  // panel pod polem: zmieniaj DOM tylko gdy coś się zmieniło (podmiana co klatkę gubi kliknięcia w Safari)
-  const m = Math.floor(mana);
-  fill.style.width = mana * 10 + "%";
-  if (manaText.textContent !== `🍞 ${m}`) { manaText.textContent = `🍞 ${m}`; bar.setAttribute("aria-valuenow", m); }
-  const fm = Math.floor(foeMana);
-  foeFill.style.width = foeMana * 10 + "%";
-  if (foeText.textContent !== `🏯 ${fm}`) { foeText.textContent = `🏯 ${fm}`; foeFill.parentElement.setAttribute("aria-valuenow", fm); }
-  cardBtns.forEach((b, i) => b.classList.toggle("poor", mana < CARDS[i].cost)); // dalej da się wybrać i poczekać na mannę
+  // panel wokół pola
+  $("fill").style.width = mana * 10 + "%";
+  $("foeFill").style.width = foeMana * 10 + "%";
+  setText("manaText", `🍞 ${Math.floor(mana)}`);
+  setText("foeText", `🏯 ${Math.floor(foeMana)}`);
+  const left = Math.max(0, time < TIME ? TIME - time : TIME + OVERTIME - time), x2 = time > TIME - 60;
+  setText("clock", `${time >= TIME ? "Dogr. " : "⏱"}${Math.floor(left / 60)}:${String(Math.floor(left % 60)).padStart(2, "0")}${x2 ? " ⚡" : ""}`);
+  $("clock").classList.toggle("x2", x2);
+  setText("crowns", `👑 ${crownsOf(0)}:${crownsOf(1)}`);
+  handBtns.forEach((b, i) => b.classList.toggle("poor", hand.length > 0 && mana < byId(hand[i]).cost)); // dalej da się wybrać i poczekać
   askBtn.disabled = askCd > 0;
-  const askText = askCd > 0 ? `📖 Następna zagadka za ${Math.ceil(askCd)} s` : "📖 Zagadka = +3 🍞";
-  if (askBtn.textContent !== askText) askBtn.textContent = askText;
+  setText("ask", askCd > 0 ? `📖 Następna zagadka za ${Math.ceil(askCd)} s` : "📖 Zagadka = +3 🍞");
 }
 
-// --- zagadki i koniec gry ---
+// --- start, zagadki, koniec ---
+function start(d) {
+  diff = d;
+  cycle = shuffle(save.deck); hand = cycle.splice(0, 4); renderHand();
+  foeNext = foePick();
+  $("menu").hidden = true; $("game").hidden = false;
+  initAudio(); music(true);
+  paused = false;
+}
+
 askBtn.onclick = () => {
   const [q, ...a] = QUESTIONS[Math.floor(Math.random() * QUESTIONS.length)];
   paused = true;
@@ -330,8 +608,9 @@ askBtn.onclick = () => {
       const ok = t === a[0];
       if (ok) {
         mana = Math.min(MAX_MANA, mana + 3);
-        floatText(myTower.x, myTower.y - 60, "+3 🍞", "#8e44ad", 24, false);
-        burst(myTower.x, myTower.y - 40, 20, ["#f1c40f", "#e2b6ff", "#fff"], { speed: 120, life: 0.8 });
+        floatText(W / 2, H - 100, "+3 🍞", "#8e44ad", 24, false);
+        burst(W / 2, H - 80, 20, ["#f1c40f", "#e2b6ff", "#fff"], { speed: 120, life: 0.8 });
+        sfx("bless");
       }
       say(ok ? "Brawo! Plus trzy manny!" : "Prawidłowa odpowiedź to: " + a[0]);
       askCd = 15; paused = false; dlg.close();
@@ -343,27 +622,40 @@ askBtn.onclick = () => {
 };
 dlg.addEventListener("cancel", e => e.preventDefault());
 
-function end(won) {
-  over = true;
-  if (won) for (let i = 0; i < 160; i++)
-    fx.push({ x: Math.random() * W, y: -Math.random() * 200, vx: (Math.random() - 0.5) * 60, vy: 60 + Math.random() * 80, g: 20,
-              life: 5, max: 5, size: 6, color: ["#e74c3c", "#f1c40f", "#2ecc71", "#3498db", "#9b59b6"][i % 5] });
+function end(result) {
+  if (over) return;
+  over = true; music(false);
+  const before = arenaIdx(), delta = { win: 30, lose: -10, draw: 0 }[result];
+  save.trophies = Math.max(0, save.trophies + delta);
+  save.best = Math.max(save.best, save.trophies);
+  let chest = "";
+  if (result === "win") { // skrzynia: 6 losowych kart, z nadmiaru kopii od razu wyższy poziom
+    const pool = CARDS.filter(unlocked), got = {};
+    for (let i = 0; i < 6; i++) { const c = pool[Math.floor(Math.random() * pool.length)]; got[c.id] = (got[c.id] || 0) + 1; }
+    const lines = Object.entries(got).map(([id, n]) => {
+      const s = save.cards[id]; let up = "";
+      s.copies += n;
+      while (s.copies >= need(s.lvl) && s.lvl < 10) { s.copies -= need(s.lvl); s.lvl++; up = ` ⬆️ poziom ${s.lvl}!`; }
+      return `${byId(id).me} ${byId(id).name} ×${n}${up}`;
+    });
+    chest = `<p>🎁 Skrzynia:<br><span style="font-size:16px">${lines.join("<br>")}</span></p>`;
+    for (let i = 0; i < 160; i++)
+      fx.push({ x: Math.random() * W, y: -Math.random() * 200, vx: (Math.random() - 0.5) * 60, vy: 60 + Math.random() * 80, g: 20,
+                life: 5, max: 5, size: 6, color: ["#e74c3c", "#f1c40f", "#2ecc71", "#3498db", "#9b59b6"][i % 5] });
+  }
+  const after = arenaIdx(), newCards = CARDS.filter(c => c.arena > before && c.arena <= after);
+  const arenaMsg = after > before ? `<p>🎉 Nowa arena: ${ARENAS[after].name}!${newCards.length ? `<br>Nowe karty: ${newCards.map(c => c.me + " " + c.name).join(", ")}` : ""}</p>` : "";
+  store();
+  sfx(result === "lose" ? "lose" : "win");
   setTimeout(() => {
-    dlg.innerHTML = `<p style="font-size:64px;margin:0">${won ? "🏆" : "💪"}</p><p>${won ? "Zwycięstwo! Twierdza Goliata upadła!" : "Tym razem się nie udało. Spróbuj jeszcze raz!"}</p><button onclick="location.reload()">Zagraj jeszcze raz</button>`;
+    const title = { win: "Zwycięstwo!", lose: "Tym razem się nie udało.", draw: "Remis!" }[result];
+    dlg.innerHTML = `<p style="font-size:56px;margin:0">${{ win: "🏆", lose: "💪", draw: "🤝" }[result]}</p>
+      <p>${title}<br>👑 ${crownsOf(0)} : ${crownsOf(1)} · ${delta >= 0 ? "+" : ""}${delta} 🏆</p>${chest}${arenaMsg}
+      <button onclick="location.reload()">🏠 Wróć do menu</button>`;
     dlg.showModal();
-    say(won ? "Zwycięstwo!" : "Spróbuj jeszcze raz!");
+    say(result === "win" ? "Zwycięstwo!" : result === "draw" ? "Remis!" : "Spróbuj jeszcze raz!");
   }, 1200); // najpierw widać wybuch wieży
 }
-
-// wybór poziomu na start
-dlg.innerHTML = `<p style="font-size:48px;margin:0">⚔️</p><p>Wybierz poziom trudności</p>`;
-LEVELS.forEach(l => {
-  const b = document.createElement("button");
-  b.textContent = l.name;
-  b.onclick = () => { level = l; paused = false; dlg.close(); };
-  dlg.append(b);
-});
-dlg.showModal();
 
 let last = performance.now();
 function loop(now) {
@@ -372,7 +664,7 @@ function loop(now) {
   if (!paused && !over) step(dt);
   for (const p of fx) { p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += (p.g || 0) * dt; }
   fx = fx.filter(p => p.life > 0);
-  draw();
+  if (!$("game").hidden) draw();
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
