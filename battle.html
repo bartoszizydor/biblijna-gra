@@ -55,6 +55,16 @@
 <dialog id="dlg"></dialog>
 <script>
 const W = 360, H = 520, MAX_MANA = 10, MANA_PER_SEC = 0.5;
+const BRIDGES = [W / 4, W * 3 / 4]; // przez rzekę można przejść tylko po mostach
+
+// dokąd iść teraz: prosto do celu, albo najpierw do najbliższego mostu i przez niego
+function waypoint(u, tx, ty) {
+  const below = u.y > H / 2;
+  if (below === ty > H / 2) return [tx, ty];
+  const bx = Math.abs(u.x - BRIDGES[0]) <= Math.abs(u.x - BRIDGES[1]) ? BRIDGES[0] : BRIDGES[1];
+  if (Math.abs(u.x - bx) > 4) return [bx, H / 2 + (below ? 24 : -24)]; // podejdź do wejścia na most
+  return [bx, H / 2 + (below ? -24 : 24)];                              // przejdź na drugą stronę
+}
 // me = Twoja postać, foe = postać przeciwnika o tych samych siłach
 const CARDS = [
   { name: "Trębacz", me: "🎺", foe: "🐎", cost: 2, hp: 30,  dmg: 6,  range: 20,  speed: 70, info: "Bardzo szybki" },
@@ -112,7 +122,8 @@ bg.width = W * dpr; bg.height = H * dpr;
   b.fillStyle = g; b.fillRect(0, 0, W, H);
   b.fillStyle = "rgba(120,60,40,.08)"; b.fillRect(0, 0, W, H / 2);
   for (let i = 0; i < 300; i++) { b.fillStyle = `rgba(50,110,35,${0.15 + Math.random() * 0.25})`; b.fillRect(Math.random() * W, Math.random() * H, 2, 5); }
-  b.fillStyle = "rgba(227,207,150,.75)"; b.fillRect(W / 2 - 24, 60, 48, H - 120);
+  b.strokeStyle = "rgba(227,207,150,.75)"; b.lineWidth = 34; b.lineJoin = b.lineCap = "round";
+  for (const bx of BRIDGES) { b.beginPath(); b.moveTo(W / 2, 60); b.lineTo(bx, H / 2 - 40); b.lineTo(bx, H / 2 + 40); b.lineTo(W / 2, H - 60); b.stroke(); }
   b.font = `15px ${EMOJI_FONT}`; b.textAlign = "center";
   [[30, 150], [320, 200], [50, 330], [300, 420], [80, 470], [290, 90], [24, 250], [338, 300], [140, 120], [230, 400]]
     .forEach(([x, y], i) => b.fillText(["🌼", "🌷", "🌿"][i % 3], x, y));
@@ -204,7 +215,10 @@ function step(dt) {
     if (!target) continue;
     const reach = u.range + (target.tower ? 30 : 16);
     if (best > reach) {
-      if (u.speed) { u.x += (target.x - u.x) / best * u.speed * dt; u.y += (target.y - u.y) / best * u.speed * dt; u.moving = true; }
+      if (u.speed) {
+        const [wx, wy] = waypoint(u, target.x, target.y), wd = Math.hypot(wx - u.x, wy - u.y) || 1;
+        u.x += (wx - u.x) / wd * u.speed * dt; u.y += (wy - u.y) / wd * u.speed * dt; u.moving = true;
+      }
     } else if (u.cd <= 0) { attack(u, target); u.cd = 1; }
   }
   for (const s of shots) {
@@ -251,9 +265,11 @@ function draw() {
   ctx.strokeStyle = "rgba(255,255,255,.65)"; ctx.lineWidth = 1.5; ctx.beginPath();
   for (let x = 0; x <= W; x += 6) { const y = ry + Math.sin(x / 14 + T * 3) * 3; x ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
   ctx.stroke();
-  ctx.fillStyle = "#a0522d"; ctx.fillRect(W / 2 - 30, ry - 14, 60, 28);
-  ctx.strokeStyle = "#6b3410"; ctx.lineWidth = 2;
-  for (let x = W / 2 - 30; x <= W / 2 + 30; x += 10) { ctx.beginPath(); ctx.moveTo(x, ry - 14); ctx.lineTo(x, ry + 14); ctx.stroke(); }
+  for (const bx of BRIDGES) {
+    ctx.fillStyle = "#a0522d"; ctx.fillRect(bx - 25, ry - 14, 50, 28);
+    ctx.strokeStyle = "#6b3410"; ctx.lineWidth = 2;
+    for (let x = bx - 25; x <= bx + 25; x += 10) { ctx.beginPath(); ctx.moveTo(x, ry - 14); ctx.lineTo(x, ry + 14); ctx.stroke(); }
+  }
 
   ctx.textAlign = "center"; ctx.textBaseline = "middle";
   if (!over && mana >= CARDS[selected].cost) { // podpowiedź: tu możesz postawić wybraną postać
