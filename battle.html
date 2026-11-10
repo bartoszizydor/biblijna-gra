@@ -56,7 +56,13 @@
   #next { font-size: 11px; opacity: .75; border: 2px dashed #c49a3a; border-radius: 12px; padding: 2px 0; }
   .cost { position: absolute; top: -8px; right: -6px; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
           background: #8e44ad; color: #fff; border: 2px solid #fff; font-size: 13px; font-weight: bold; }
-  #ask { width: 100%; margin-top: 10px; font-size: 16px; padding: 6px; background: linear-gradient(#fff6d5, #f7d774); }
+  #askRow { display: flex; gap: 6px; margin-top: 10px; }
+  #hero { font-size: 15px; padding: 6px; background: linear-gradient(#fff3e0, #ffb74d); }
+  .shop { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .shop button { font-size: 14px; padding: 6px 2px; }
+  .track { height: 12px; border-radius: 6px; background: #e8d8b0; overflow: hidden; margin: 6px 0; }
+  .track div { height: 100%; background: linear-gradient(90deg, #f1c40f, #e67e22); }
+  #ask { flex: 1; font-size: 16px; padding: 6px; background: linear-gradient(#fff6d5, #f7d774); }
   #ask:disabled { opacity: .55; cursor: default; }
   dialog { border: 4px solid #e0b84f; border-radius: 20px; max-width: 420px; text-align: center; background: #fffaf0; color: inherit; }
   dialog[open] { animation: pop .25s ease-out; }
@@ -74,6 +80,8 @@
   <p class="label">Wybierz poziom i walcz:</p>
   <div class="diffs" id="diffs"></div>
   <button id="duo">👫 Zagraj we dwoje na jednym ekranie</button>
+  <p class="label">🎪 Tryby specjalne</p>
+  <div class="diffs" id="modes" style="grid-template-columns:repeat(2,1fr)"></div>
   <p id="menuMsg"></p>
   <p class="label">📜 Kampania: historie z Biblii</p>
   <div class="camp" id="camp"></div>
@@ -81,6 +89,12 @@
   <div class="panel quests" id="quests"></div>
   <p class="label">🏅 Odznaki</p>
   <div class="panel badges" id="badges"></div>
+  <p class="label">🛤️ Ścieżka pielgrzyma (w tym miesiącu)</p>
+  <div class="panel" id="season"></div>
+  <p class="label">🛒 Sklep dnia</p>
+  <div class="panel" id="shopBox"></div>
+  <p class="label">📊 Statystyki</p>
+  <div class="panel" id="statsBox"></div>
   <p class="label">Twoja talia (<span id="deckCount">8</span>/8): dotknij karty, aby ją dodać lub zabrać</p>
   <div class="cards" id="coll"></div>
   <p><button id="sound" style="padding:8px 14px;font-size:15px">🔊 Dźwięk: włączony</button></p>
@@ -104,7 +118,7 @@
     <div class="bar" role="progressbar" aria-label="Manna" aria-valuemin="0" aria-valuemax="10"><div id="fill"></div></div>
     <button class="icon emo" data-s="0" aria-label="Emotka modlitwa">🙏</button><button class="icon emo" data-s="0" aria-label="Emotka uśmiech">😄</button><button class="icon emo" data-s="0" aria-label="Emotka brawo">👏</button></div>
   <div class="cards hand" id="hand"><div id="next"></div></div>
-  <button id="ask">📖 Zagadka = +3 🍞</button>
+  <div id="askRow"><button id="ask">📖 Zagadka = +3 🍞</button><button id="hero" hidden></button></div>
 </main>
 <dialog id="dlg"></dialog>
 <script>
@@ -113,6 +127,7 @@ const BRIDGES = [W / 4, W * 3 / 4]; // przez rzekę można przejść tylko po mo
 
 // postacie, które nie są kartami: zwierzęta z arki i olbrzym z kampanii
 const ANIMAL = { name: "Zwierzęta", me: "🐑", foe: "🐀", hp: 28, dmg: 6, range: 20, speed: 55 };
+const LIONS = { name: "Lwy", me: "🦁", foe: "🦁", hp: 55, dmg: 9, range: 20, speed: 60, count: 2 };
 const GOLIAT = { name: "Goliat", me: "🧌", foe: "🧌", hp: 420, dmg: 28, range: 20, speed: 22, big: true };
 // me = Twoja postać, foe = postać przeciwnika o tych samych siłach; type "power" = Boża moc, "building" = budowla
 const CARDS = [
@@ -130,6 +145,8 @@ const CARDS = [
   { id: "traby",   name: "Trąby",   me: "📯", type: "power", cost: 3, towerDmg: 110, radius: 45, arena: 1, info: "Boża moc: trąby Jerycha kruszą tylko wieże" },
   { id: "mojzesz", name: "Mojżesz", me: "🌊", type: "power", cost: 2, part: 12, arena: 2, info: "Boża moc: woda się rozstępuje i Twoi przejdą tędy przez rzekę" },
   { id: "arka",    name: "Arka",    me: "🚢", foe: "🏚️", type: "building", cost: 5, hp: 260, life: 30, spawns: ANIMAL, every: 4, arena: 3, info: "Arka Noego: co chwilę wypuszcza zwierzęta" },
+  { id: "debora",  name: "Debora",  me: "👸", foe: "🧙", cost: 5, hp: 150, dmg: 12, range: 90, speed: 35, hero: "song", arena: 1, info: "Bohaterka. ⚡ Zdolność: pieśń leczy Twoich wokół niej" },
+  { id: "daniel",  name: "Daniel",  me: "🧔", foe: "🤴", cost: 6, hp: 200, dmg: 14, range: 20, speed: 35, hero: "lions", arena: 2, info: "Bohater. ⚡ Zdolność: przywołuje 2 przyjazne lwy" },
   { id: "michal",  name: "Michał",  me: "👼", foe: "🐉", cost: 6, hp: 200, dmg: 25, range: 20, speed: 50, air: true, arena: 2, info: "Archanioł: lata, najmocniejszy" },
 ];
 const DEFAULT_DECK = ["trebacz", "dawid", "gedeon", "lew", "jozue", "samson", "grad", "blogo"];
@@ -145,6 +162,13 @@ const DIFFS = [
   { name: "🦁 Średni", rate: 1.2, hp: 1.15, smart: true },
   { name: "🐉 Trudny", rate: 1.6, hp: 1.35, smart: true },
 ];
+// tryby specjalne: na bazie poziomu średniego
+const MODES = [
+  { name: "⚡ Potrójna manna", mana: 3 },
+  { name: "🤝 2 na 2 z pomocnikiem", team: true },
+  { name: "🎲 Losowa talia", random: true },
+  { name: "🃏 Wybierz karty", draft: true },
+].map(m => ({ ...DIFFS[1], ...m }));
 const DUO = { name: "👫 We dwoje", rate: 1, hp: 1, smart: false, duo: true };
 // kampania: kolejne bitwy z historią; level = numer etapu
 const CAMPAIGN = [
@@ -213,14 +237,20 @@ let save = null;
 try { save = JSON.parse(localStorage.getItem(SAVE)); } catch {}
 if (!save || !save.cards) save = { trophies: 0, best: 0, deck: [...DEFAULT_DECK], cards: {}, sound: true };
 CARDS.forEach(c => save.cards[c.id] ??= { lvl: 1, copies: 0 });
-save.stats ??= {}; save.campaign ??= 0;
+save.stats ??= {}; save.campaign ??= 0; save.gold ??= 0; save.plays ??= {};
+const month = new Date().toISOString().slice(0, 7);
+if (save.season?.id !== month) save.season = { id: month, crowns: 0, claimed: 0 }; // nowa ścieżka co miesiąc
 const today = Math.floor((Date.now() - new Date().getTimezoneOffset() * 6e4) / 864e5); // numer dnia wg zegara dziecka
 if (save.daily?.day !== today) save.daily = { day: today, prog: {}, claimed: [] };
+if (save.shop?.day !== today) save.shop = { day: today, bought: [] };
+const shopOffers = () => { const p = CARDS.filter(unlocked); return [...new Set([0, 5, 10].map(k => p[(today * 7 + k) % p.length]))]; };
+const SHOP_PRICE = 25, SEASON_STEP = 5, SEASON_TIERS = 10;
 const todayQuests = () => [0, 2, 4].map(k => QUESTS[(today + k) % QUESTS.length]);
 const store = () => { try { localStorage.setItem(SAVE, JSON.stringify(save)); } catch {} };
 const arenaIdx = () => ARENAS.reduce((a, ar, i) => save.best >= ar.min ? i : a, 0); // areny nie cofają się po porażce
 const unlocked = c => c.arena <= arenaIdx();
 save.deck = save.deck.filter(id => byId(id) && unlocked(byId(id)));
+const EVO = 5;                                             // od tego poziomu karta ewoluuje
 const need = lvl => lvl * 2;                                // ile kopii trzeba na następny poziom
 const mult = id => 1 + 0.08 * (save.cards[id].lvl - 1);   // każdy poziom +8% siły
 
@@ -294,7 +324,7 @@ function renderMenu() {
     const s = save.cards[c.id], open = unlocked(c), inDeck = save.deck.includes(c.id), b = document.createElement("button");
     b.className = [inDeck && "indeck", !open && "locked", c.type === "power" && "power"].filter(Boolean).join(" ");
     b.innerHTML = `<span class="cost">${c.cost}</span><span class="e">${open ? c.me : "🔒"}</span>${c.name}
-      <small>${open ? `Poz. ${s.lvl} · ${s.copies}/${need(s.lvl)}` : ARENAS[c.arena].name}</small>`;
+      <small>${open ? `Poz. ${s.lvl}${s.lvl >= EVO ? " ⭐" : ""} · ${s.copies}/${need(s.lvl)}` : ARENAS[c.arena].name}</small>`;
     b.setAttribute("aria-label", open ? `${c.name}, ${c.info}, poziom ${s.lvl}, ${inDeck ? "w talii" : "poza talią"}` : `${c.name}, zablokowana`);
     b.disabled = !open;
     b.onclick = () => {
@@ -319,7 +349,27 @@ function renderMenu() {
     return `<div><span>${done ? "✅" : n >= q.goal ? "🎁" : "⬜"} ${q.text}</span><b>${n}/${q.goal}</b></div>`;
   }).join("");
   $("badges").innerHTML = BADGES.map(b => `<span class="${b.ok() ? "" : "off"}" title="${b.name}" role="img" aria-label="${b.name}${b.ok() ? "" : " (jeszcze nie)"}">${b.e}</span>`).join("");
-  document.querySelectorAll("#diffs button, #duo, #camp button").forEach(b => b.disabled = save.deck.length !== 8 || !!b.dataset.lock);
+  const sn = save.season, tier = Math.min(SEASON_TIERS, sn.claimed);
+  $("season").innerHTML = tier >= SEASON_TIERS ? "🌟 Cała ścieżka przebyta! Wróć w przyszłym miesiącu." :
+    `Etap ${tier + 1}/${SEASON_TIERS} · 👑 ${sn.crowns % SEASON_STEP}/${SEASON_STEP} do nagrody (${tier % 2 ? "🎁 skrzynia" : "🪙 30 złota"})
+     <div class="track"><div style="width:${sn.crowns % SEASON_STEP / SEASON_STEP * 100}%"></div></div><small>Korony z każdej bitwy przesuwają Cię dalej.</small>`;
+  $("shopBox").innerHTML = `<div>🪙 Masz ${save.gold} złota</div><div class="shop"></div>`;
+  shopOffers().forEach(c => {
+    const b = document.createElement("button"), got = save.shop.bought.includes(c.id);
+    b.innerHTML = `<span style="font-size:22px">${c.me}</span><br>${c.name} ×3<br>${got ? "✅ kupione" : `🪙 ${SHOP_PRICE}`}`;
+    b.disabled = got || save.gold < SHOP_PRICE;
+    b.onclick = () => {
+      save.gold -= SHOP_PRICE; save.shop.bought.push(c.id);
+      $("menuMsg").textContent = `Kupiono: ${c.me} ${c.name} ×3${addCopies(c.id, 3)}`;
+      store(); renderMenu();
+    };
+    $("shopBox").lastChild.append(b);
+  });
+  const st = save.stats, fav = Object.entries(save.plays).sort((a, b) => b[1] - a[1])[0];
+  $("statsBox").innerHTML = `⚔️ Bitwy: ${st.battle || 0} · 🏆 Wygrane: ${st.win || 0}${st.battle ? ` (${Math.round((st.win || 0) / st.battle * 100)}%)` : ""}<br>
+    📖 Dobre odpowiedzi: ${st.riddle || 0} · 🙏 Boża moc: ${st.power || 0}<br>
+    ❤️ Ulubiona karta: ${fav ? `${byId(fav[0]).me} ${byId(fav[0]).name} (${fav[1]}×)` : "jeszcze żadna"}`;
+  document.querySelectorAll("#diffs button, #duo, #camp button, #modes button").forEach(b => b.disabled = !b.dataset.free && save.deck.length !== 8 || !!b.dataset.lock);
   if (save.deck.length !== 8) $("menuMsg").textContent = `Talia musi mieć 8 kart (teraz ${save.deck.length}).`;
 }
 DIFFS.forEach(d => {
@@ -329,6 +379,25 @@ DIFFS.forEach(d => {
   $("diffs").append(b);
 });
 $("duo").onclick = () => start(DUO);
+MODES.forEach(m => {
+  const b = document.createElement("button");
+  b.textContent = m.name;
+  if (m.random || m.draft) b.dataset.free = 1; // nie potrzebują Twojej talii
+  b.onclick = () => m.draft ? draft(m, []) : start(m.random ? { ...m, deck: shuffle(CARDS.filter(unlocked).map(c => c.id)).slice(0, 8) } : m);
+  $("modes").append(b);
+});
+function draft(m, picks) { // 8 razy wybierz 1 z 3 kart
+  if (picks.length === 8) { dlg.close(); return start({ ...m, deck: picks }); }
+  const opts = shuffle(CARDS.filter(c => unlocked(c) && !picks.includes(c.id))).slice(0, 3);
+  dlg.innerHTML = `<p>🃏 Wybierz kartę ${picks.length + 1} z 8</p>`;
+  opts.forEach(c => {
+    const b = document.createElement("button");
+    b.innerHTML = `${c.me} ${c.name} (${c.cost} 🍞)<br><small style="font-size:13px">${c.info}</small>`;
+    b.onclick = () => draft(m, [...picks, c.id]);
+    dlg.append(b);
+  });
+  if (!dlg.open) dlg.showModal();
+}
 function story(lv) { // opowieść przed etapem kampanii
   dlg.innerHTML = `<p style="font-size:56px;margin:0">${lv.e}</p><h2>${lv.name}</h2><p>${lv.story}</p>
     <button id="go">⚔️ Do boju!</button><button id="back">Wróć</button>`;
@@ -366,7 +435,7 @@ const towers = [
   mkTower(1, W / 2, 40, true),     mkTower(1, W / 4, 108, false),     mkTower(1, W * 3 / 4, 108, false),
 ];
 let units = [...towers], shots = [], fx = [];
-let diff = DIFFS[0], mana = [5, 5], foeNext = null, paused = true, askCd = 0, over = false, time = 0;
+let diff = DIFFS[0], mana = [5, 5, 5, 5], brains = [], paused = true, askCd = 0, over = false, time = 0;
 let cycles = [[], []], hands = [[], []], sel = [0, 0], armed = -1; // [gracz 1 (dół), gracz 2 / przeciwnik (góra)]
 let parted = [null, null], emos = [null, null], bossT = 6, badgesBefore = [];
 let msg = "", msgT = 0, T = 0, shake = 0, nextId = 0;
@@ -437,7 +506,7 @@ function spawn(side, c, x, y, m = 1) {
     units.push({ id: nextId++, side, x: x + (k - (n - 1) / 2) * 24, y, hp, max: hp, dmg: Math.round((c.dmg || 0) * m), range: c.range || 0,
                  speed: c.speed || 0, air: c.air, building: c.type === "building", splash: c.splash, siege: c.siege,
                  onlyBuildings: c.onlyBuildings, emoji: side ? c.foe : c.me, cd: 0, flash: 0,
-                 big: c.big, life: c.life, spawns: c.spawns, every: c.every, spawnT: 1, m });
+                 big: c.big, life: c.life, spawns: c.spawns, every: c.every, spawnT: 1, m, hero: c.hero, name: c.name, abT: 3 });
   ring(x, y + 12, side ? "#e74c3c" : "#3498db");
   for (let i = 0; i < 3; i++) fx.push({ x: x + (Math.random() - 0.5) * 30, y: y + (Math.random() - 0.5) * 20, vx: 0, vy: -30, life: 0.6, max: 0.6, text: "✨", size: 14 });
   sfx("spawn");
@@ -504,11 +573,43 @@ canvas.addEventListener("pointerdown", e => {
   if (c.type !== "power") y = s ? clamp(y, 20, H / 2 - 30) : clamp(y, H / 2 + 30, H - 20); // postacie i mury tylko na swojej połowie
   mana[s] -= c.cost;
   if (armed === s) armed = -1;
+  const n0 = units.length;
   spawn(s, c, x, y, diff.duo ? 1 : mult(c.id));
-  if (!s) { track("play"); if (c.type === "power") track("power"); }
+  if (!s) {
+    const evo = !diff.duo && save.cards[c.id].lvl >= EVO && !c.type; // ewolucja: +20% siły i złota obwódka
+    for (const u of units.slice(n0)) {
+      u.mine = true;
+      if (evo) { u.evo = true; u.hp = u.max = Math.round(u.max * 1.2); u.dmg = Math.round(u.dmg * 1.2); }
+    }
+    track("play"); if (c.type === "power") track("power");
+    if (!diff.duo) save.plays[c.id] = (save.plays[c.id] || 0) + 1;
+  }
   hands[s][sel[s]] = cycles[s].shift(); cycles[s].push(c.id);
   renderHand(s);
 });
+
+// zdolność bohatera: Debora leczy pieśnią, Daniel przywołuje lwy
+const HERO_COST = 2, HERO_CD = 10;
+function heroPower(u) {
+  u.abT = HERO_CD;
+  floatText(u.x, u.y - 34, "⚡", "#f39c12", 22, false);
+  if (u.hero === "song") {
+    for (const o of units) if (o.side === u.side && !o.tower && o.hp > 0 && dist(o, u) < 100) {
+      const h = Math.round(50 * u.m); o.hp = Math.min(o.max, o.hp + h); floatText(o.x, o.y - 24, "+" + h, "#2ecc71", 15);
+    }
+    ring(u.x, u.y, "#f1c40f", 100);
+    for (let i = 0; i < 5; i++) fx.push({ x: u.x + (Math.random() - 0.5) * 80, y: u.y, vx: 0, vy: -40, life: 1, max: 1, text: "🎵", size: 16 });
+    sfx("bless");
+  } else {
+    spawn(u.side, LIONS, u.x, u.y + (u.side ? 20 : -20), u.m);
+  }
+}
+const myHero = () => units.find(u => u.mine && u.hero && u.hp > 0);
+$("hero").onclick = () => {
+  const u = myHero();
+  if (!u || paused || over || u.abT > 0 || mana[0] < HERO_COST) return;
+  mana[0] -= HERO_COST; heroPower(u);
+};
 
 // emotki: krótki dymek nad główną wieżą
 function emote(s, e) {
@@ -528,29 +629,31 @@ function track(k, n = 1) {
 // --- przeciwnik ---
 const foeMult = () => diff.hp * (1 + 0.08 * arenaIdx());
 const foePick = () => { const p = CARDS.filter(c => unlocked(c) && !c.heal && !c.part); return p[Math.floor(Math.random() * p.length)]; };
-function foeTurn() {
-  const c = foeNext;
-  if (mana[1] < c.cost) return;
+// boty: b.side = strona, b.mi = która manna; przeciwnik zawsze, w trybie 2 na 2 także pomocnik i drugi przeciwnik
+function foeTurn(b) {
+  const c = b.next, side = b.side, mine = u => u.side === side;
+  if (mana[b.mi] < c.cost) return;
+  const flip = y => side ? y : H - y; // pomocnik gra od dołu
   let x, y;
-  if (c.towerDmg) { // trąby na najsłabszą Twoją wieżę
-    const t = towers.filter(t => !t.side && t.hp > 0).sort((a, b) => a.hp - b.hp)[0];
+  if (c.towerDmg) { // trąby na najsłabszą wieżę przeciwnika
+    const t = towers.filter(t => t.side !== side && t.hp > 0).sort((a, b) => a.hp - b.hp)[0];
     x = t.x; y = t.y;
-  } else if (c.type === "power") { // grad tam, gdzie stoi najwięcej Twoich postaci
+  } else if (c.type === "power") { // grad tam, gdzie stoi najwięcej wrogów
     let most = 0;
-    for (const u of units) if (!u.side && !u.tower) {
-      const n = units.filter(o => !o.side && !o.tower && dist(o, u) < c.radius).length;
+    for (const u of units) if (!mine(u) && !u.tower) {
+      const n = units.filter(o => !mine(o) && !o.tower && dist(o, u) < c.radius).length;
       if (n > most) { most = n; x = u.x; y = u.y; }
     }
-    if (most < 2) { foeNext = foePick(); return; } // nie warto, weź inną kartę
+    if (most < 2) { b.next = foePick(); return; } // nie warto, weź inną kartę
   } else {
-    // sprytny przeciwnik stawia postać naprzeciw Twojej, która zaszła najdalej
-    const threat = diff.smart && units.filter(u => !u.side && !u.tower && !u.building).sort((a, b) => a.y - b.y)[0];
-    if (threat) { x = clamp(threat.x, 30, W - 30); y = clamp(threat.y - 70, 80, H / 2 - 30); }
-    else { x = BRIDGES[Math.random() < 0.5 ? 0 : 1] + (Math.random() - 0.5) * 60; y = c.type === "building" ? 170 : 130; }
+    // sprytny bot stawia postać naprzeciw wroga, który zaszedł najdalej
+    const threat = diff.smart && units.filter(u => !mine(u) && !u.tower && !u.building).sort((p, q) => flip(p.y) - flip(q.y))[0];
+    if (threat) { x = clamp(threat.x, 30, W - 30); y = flip(clamp(flip(threat.y) - 70, 80, H / 2 - 30)); }
+    else { x = BRIDGES[Math.random() < 0.5 ? 0 : 1] + (Math.random() - 0.5) * 60; y = flip(c.type === "building" ? 170 : 130); }
   }
-  mana[1] -= c.cost;
-  spawn(1, c, x, y, foeMult());
-  foeNext = foePick();
+  mana[b.mi] -= c.cost;
+  spawn(side, c, x, y, side ? foeMult() : 1);
+  b.next = foePick();
 }
 
 // --- logika ---
@@ -573,15 +676,15 @@ function separate() { // postacie się przepychają, zamiast stać jedna na drug
 
 function step(dt) {
   time += dt;
-  const rate = MANA_PER_SEC * (time > TIME - 60 ? 2 : 1); // ostatnia minuta i dogrywka: manna 2× szybciej
+  const rate = MANA_PER_SEC * (diff.mana || 1) * (time > TIME - 60 ? 2 : 1); // ostatnia minuta i dogrywka: manna 2× szybciej
   mana[0] = Math.min(MAX_MANA, mana[0] + rate * dt);
-  mana[1] = Math.min(MAX_MANA, mana[1] + rate * dt * diff.rate);
+  for (const i of [1, 2, 3]) mana[i] = Math.min(MAX_MANA, mana[i] + rate * dt * diff.rate);
   askCd = Math.max(0, askCd - dt);
   for (const s of [0, 1]) {
     if (parted[s] && (parted[s].t -= dt) <= 0) parted[s] = null;
     if (emos[s] && (emos[s].t -= dt) <= 0) emos[s] = null;
   }
-  if (!diff.duo) foeTurn();
+  brains.forEach(foeTurn);
   if (diff.boss && (bossT -= dt) <= 0) { // Goliat wraca co 45 s
     bossT = 45;
     spawn(1, GOLIAT, BRIDGES[Math.random() < 0.5 ? 0 : 1], 120, foeMult());
@@ -599,6 +702,10 @@ function step(dt) {
       continue;
     }
     if (u.tower && (!u.active || u.hp <= 0)) continue;
+    if (u.hero) { // bohaterowie botów i gracza 2 używają zdolności sami, gdy wróg jest blisko
+      u.abT -= dt;
+      if (!u.mine && u.abT <= 0 && units.some(o => o.side !== u.side && o.hp > 0 && !o.tower && dist(o, u) < 100)) heroPower(u);
+    }
     let target = null, best = Infinity;
     for (const o of units) {
       if (o.side === u.side || o.hp <= 0 || !canHit(u, o)) continue;
@@ -641,7 +748,7 @@ function drawUnit(u) {
   ctx.fillStyle = "rgba(0,0,0,.22)";
   ctx.beginPath(); ctx.ellipse(u.x, u.y + (u.tower ? 26 : 14), u.tower ? 32 : u.air ? 9 : 13, u.tower ? 8 : u.air ? 3 : 4, 0, 0, Math.PI * 2); ctx.fill();
   if (!u.tower) {
-    ctx.strokeStyle = u.side ? "rgba(231,76,60,.9)" : "rgba(52,152,219,.95)"; ctx.lineWidth = 3;
+    ctx.strokeStyle = u.evo ? "#f1c40f" : u.side ? "rgba(231,76,60,.9)" : "rgba(52,152,219,.95)"; ctx.lineWidth = u.evo ? 4 : 3;
     ctx.beginPath(); ctx.ellipse(u.x, u.y + 14, 16, 5, 0, 0, Math.PI * 2); ctx.stroke();
   }
   if (u.flash > 0) {
@@ -652,6 +759,7 @@ function drawUnit(u) {
   ctx.font = `${size}px ${EMOJI_FONT}`;
   ctx.fillStyle = "#000"; // emoji przejmują przezroczystość koloru wypełnienia
   ctx.fillText(u.hp > 0 ? u.emoji : "🔥", u.x + jig, u.y - bob);
+  if (u.evo || u.hero) { ctx.font = `12px ${EMOJI_FONT}`; ctx.fillText(u.hero ? "⚡" : "⭐", u.x + 14, u.y - 14 - bob); }
   if (u.tower && u.king && !u.active && u.hp > 0) { ctx.font = `16px ${EMOJI_FONT}`; ctx.fillText("💤", u.x + 30, u.y - 28); }
   if (u.tower && u.hp <= 0) return;
   const w = u.tower ? (u.king ? 80 : 60) : u.big ? 46 : 32, h = u.tower ? 7 : 5, top = u.y - (u.tower ? 36 : u.big ? 34 : 24) - bob;
@@ -741,6 +849,12 @@ function draw() {
   setText("crowns", `👑 ${crownsOf(0)}:${crownsOf(1)}`);
   handBtns.forEach((bs, s) => bs.forEach((b, i) => b.classList.toggle("poor", hands[s].length > 0 && mana[s] < byId(hands[s][i]).cost))); // dalej da się wybrać i poczekać
   askBtn.disabled = askCd > 0;
+  const hu = myHero(), heroBtn = $("hero");
+  heroBtn.hidden = !hu;
+  if (hu) {
+    heroBtn.disabled = hu.abT > 0 || mana[0] < HERO_COST;
+    setText("hero", hu.abT > 0 ? `⚡ ${Math.ceil(hu.abT)} s` : `⚡ ${hu.name} (${HERO_COST} 🍞)`);
+  }
   setText("ask", askCd > 0 ? `📖 Następna zagadka za ${Math.ceil(askCd)} s` : "📖 Zagadka = +3 🍞");
 }
 
@@ -748,8 +862,9 @@ function draw() {
 function start(d) {
   diff = d;
   badgesBefore = BADGES.filter(b => b.ok()).map(b => b.e);
-  for (const s of [0, 1]) { cycles[s] = shuffle(save.deck); hands[s] = cycles[s].splice(0, 4); renderHand(s); }
-  foeNext = foePick();
+  for (const s of [0, 1]) { cycles[s] = shuffle(s ? save.deck : d.deck || save.deck); hands[s] = cycles[s].splice(0, 4); renderHand(s); }
+  brains = d.duo ? [] : [{ side: 1, mi: 1 }, ...d.team ? [{ side: 0, mi: 2 }, { side: 1, mi: 3 }] : []];
+  brains.forEach(b => b.next = foePick());
   $("game").classList.toggle("duo", !!d.duo); $("p2").hidden = !d.duo; askBtn.hidden = !!d.duo;
   $("menu").hidden = true; $("game").hidden = false;
   initAudio(); music(true);
@@ -781,15 +896,19 @@ askBtn.onclick = () => {
 };
 dlg.addEventListener("cancel", e => e.preventDefault());
 
+// nowe kopie karty; z nadmiaru od razu wyższy poziom
+function addCopies(id, k) {
+  const s = save.cards[id]; let up = "";
+  s.copies += k;
+  while (s.copies >= need(s.lvl) && s.lvl < 10) { s.copies -= need(s.lvl); s.lvl++; up = ` ⬆️ poziom ${s.lvl}!${s.lvl === EVO ? " ⭐ ewolucja!" : ""}`; }
+  return up;
+}
 // skrzynia: n losowych kart, z nadmiaru kopii od razu wyższy poziom
 function openChest(n = 6) {
   const pool = CARDS.filter(unlocked), got = {};
   for (let i = 0; i < n; i++) { const c = pool[Math.floor(Math.random() * pool.length)]; got[c.id] = (got[c.id] || 0) + 1; }
   return `<span style="font-size:16px">${Object.entries(got).map(([id, k]) => {
-    const s = save.cards[id]; let up = "";
-    s.copies += k;
-    while (s.copies >= need(s.lvl) && s.lvl < 10) { s.copies -= need(s.lvl); s.lvl++; up = ` ⬆️ poziom ${s.lvl}!`; }
-    return `${byId(id).me} ${byId(id).name} ×${k}${up}`;
+    return `${byId(id).me} ${byId(id).name} ×${k}${addCopies(id, k)}`;
   }).join("<br>")}</span>`;
 }
 
@@ -798,6 +917,17 @@ function reward(result) {
   save.trophies = Math.max(0, save.trophies + delta);
   save.best = Math.max(save.best, save.trophies);
   track("tower", towers.filter(t => t.side && t.hp <= 0).length);
+  track("battle");
+  const gold = { win: 20, lose: 3, draw: 8 }[result];
+  save.gold += gold;
+  parts.push(`<p>🪙 +${gold} złota</p>`);
+  const sn = save.season; // ścieżka pielgrzyma: nagroda co 5 koron
+  sn.crowns += crownsOf(0);
+  while (Math.floor(sn.crowns / SEASON_STEP) > sn.claimed && sn.claimed < SEASON_TIERS) {
+    sn.claimed++;
+    parts.push(sn.claimed % 2 ? `<p>🛤️ Etap ścieżki ${sn.claimed}: 🪙 +30 złota</p>` : `<p>🛤️ Etap ścieżki ${sn.claimed}: 🎁 ${openChest(4)}</p>`);
+    if (sn.claimed % 2) save.gold += 30;
+  }
   if (result === "win") {
     track("win"); if (crownsOf(0) === 3) track("three");
     parts.push(`<p>🎁 Skrzynia:<br>${openChest()}</p>`);
