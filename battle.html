@@ -10,8 +10,17 @@
          font-family: "Comic Sans MS", "Trebuchet MS", sans-serif; color: #3b2f1e; }
   [hidden] { display: none !important; }
   /* szerokość liczona z wysokości ekranu, żeby całe pole + karty mieściły się w pionie */
-  #game { width: max(220px, min(360px, 100vw - 24px, (100vh - 250px) * 0.69)); text-align: center; padding: 6px 0; }
-  @supports (height: 100dvh) { #game { width: max(220px, min(360px, 100vw - 24px, (100dvh - 250px) * 0.69)); } }
+  #game { --reserve: 250px; width: max(220px, min(360px, 100vw - 24px, (100vh - var(--reserve)) * 0.69)); text-align: center; padding: 6px 0; }
+  @supports (height: 100dvh) { #game { width: max(220px, min(360px, 100vw - 24px, (100dvh - var(--reserve)) * 0.69)); } }
+  #game.duo { --reserve: 320px; } /* we dwoje: druga ręka kart u góry */
+  .flip { transform: rotate(180deg); } /* gracz 2 siedzi naprzeciwko */
+  .emo { padding: 0 3px !important; font-size: 15px !important; border-width: 2px; }
+  .camp { display: grid; gap: 6px; }
+  .camp button, #duo { font-size: 16px; padding: 8px; text-align: left; }
+  #duo { width: 100%; text-align: center; margin-top: 8px; }
+  .quests div { display: flex; justify-content: space-between; gap: 8px; text-align: left; padding: 3px 0; }
+  .badges { display: flex; justify-content: center; gap: 8px; font-size: 28px; }
+  .badges .off { filter: grayscale(1); opacity: .3; }
   #menu { width: min(480px, 100vw - 24px); text-align: center; padding: 12px 0 24px; }
   h1 { font-size: 26px; margin: 0 0 8px; color: #8b5a2b; text-shadow: 0 2px 0 #fff; }
   .panel { background: #fffaf0; border: 3px solid #e0b84f; border-radius: 16px; padding: 10px; margin-bottom: 12px; }
@@ -21,14 +30,14 @@
   .diffs button { font-size: 17px; padding: 10px 4px; }
   canvas { width: 100%; border-radius: 18px; border: 6px solid #8b5a2b; box-shadow: 0 6px 0 #5b3a1a;
            touch-action: none; display: block; box-sizing: border-box; }
-  #topRow, #manaRow { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: bold; }
+  #topRow, #manaRow, #manaRow2 { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: bold; }
   #topRow { margin: 0 0 6px; }
-  #manaRow { margin: 8px 0 10px; font-size: 16px; }
+  #manaRow, #manaRow2 { margin: 8px 0 10px; font-size: 16px; }
   #clock { min-width: 4.2em; } #clock.x2 { color: #8e44ad; }
   .bar { flex: 1; height: 14px; border-radius: 8px; background: #5b3a1a; border: 3px solid #e0b84f; overflow: hidden; position: relative; }
-  #fill, #foeFill { height: 100%; width: 0; }
+  #fill, #foeFill, #fill2 { height: 100%; width: 0; }
   #fill { background: linear-gradient(#e2b6ff, #8e44ad); }
-  #foeFill { background: linear-gradient(#ff9a8a, #c0392b); }
+  #foeFill, #fill2 { background: linear-gradient(#ff9a8a, #c0392b); }
   .bar::after { content: ""; position: absolute; inset: 0;
                 background: repeating-linear-gradient(90deg, transparent 0 calc(10% - 2px), rgba(0,0,0,.35) calc(10% - 2px) 10%); }
   button { font: inherit; font-size: 13px; padding: 4px 2px; border: 3px solid #e0b84f; border-radius: 14px;
@@ -64,13 +73,26 @@
   <div class="panel" id="arena"></div>
   <p class="label">Wybierz poziom i walcz:</p>
   <div class="diffs" id="diffs"></div>
+  <button id="duo">👫 Zagraj we dwoje na jednym ekranie</button>
   <p id="menuMsg"></p>
+  <p class="label">📜 Kampania: historie z Biblii</p>
+  <div class="camp" id="camp"></div>
+  <p class="label">🎯 Zadania dnia (nagroda: skrzynia)</p>
+  <div class="panel quests" id="quests"></div>
+  <p class="label">🏅 Odznaki</p>
+  <div class="panel badges" id="badges"></div>
   <p class="label">Twoja talia (<span id="deckCount">8</span>/8): dotknij karty, aby ją dodać lub zabrać</p>
   <div class="cards" id="coll"></div>
   <p><button id="sound" style="padding:8px 14px;font-size:15px">🔊 Dźwięk: włączony</button></p>
 </section>
 
 <main id="game" hidden>
+  <div id="p2" class="flip" hidden>
+    <div id="manaRow2"><span id="manaText2">🍞 0</span>
+      <div class="bar" role="progressbar" aria-label="Manna gracza 2"><div id="fill2"></div></div>
+      <button class="icon emo" data-s="1">🙏</button><button class="icon emo" data-s="1">😄</button><button class="icon emo" data-s="1">👏</button></div>
+    <div class="cards hand" id="hand2"><div id="next2"></div></div>
+  </div>
   <div id="topRow">
     <span id="foeText">🏯 0</span>
     <div class="bar" role="progressbar" aria-label="Manna przeciwnika" aria-valuemin="0" aria-valuemax="10"><div id="foeFill"></div></div>
@@ -79,7 +101,8 @@
   </div>
   <canvas id="c" aria-label="Pole bitwy. Wybierz kartę i dotknij pola."></canvas>
   <div id="manaRow"><span id="manaText">🍞 0</span>
-    <div class="bar" role="progressbar" aria-label="Manna" aria-valuemin="0" aria-valuemax="10"><div id="fill"></div></div></div>
+    <div class="bar" role="progressbar" aria-label="Manna" aria-valuemin="0" aria-valuemax="10"><div id="fill"></div></div>
+    <button class="icon emo" data-s="0" aria-label="Emotka modlitwa">🙏</button><button class="icon emo" data-s="0" aria-label="Emotka uśmiech">😄</button><button class="icon emo" data-s="0" aria-label="Emotka brawo">👏</button></div>
   <div class="cards hand" id="hand"><div id="next"></div></div>
   <button id="ask">📖 Zagadka = +3 🍞</button>
 </main>
@@ -88,6 +111,9 @@
 const W = 360, H = 520, MAX_MANA = 10, MANA_PER_SEC = 0.5, TIME = 180, OVERTIME = 60;
 const BRIDGES = [W / 4, W * 3 / 4]; // przez rzekę można przejść tylko po mostach
 
+// postacie, które nie są kartami: zwierzęta z arki i olbrzym z kampanii
+const ANIMAL = { name: "Zwierzęta", me: "🐑", foe: "🐀", hp: 28, dmg: 6, range: 20, speed: 55 };
+const GOLIAT = { name: "Goliat", me: "🧌", foe: "🧌", hp: 420, dmg: 28, range: 20, speed: 22, big: true };
 // me = Twoja postać, foe = postać przeciwnika o tych samych siłach; type "power" = Boża moc, "building" = budowla
 const CARDS = [
   { id: "trebacz", name: "Trębacz", me: "🎺", foe: "🐎", cost: 2, hp: 30,  dmg: 6,  range: 20,  speed: 70, arena: 0, info: "Bardzo szybki" },
@@ -101,6 +127,9 @@ const CARDS = [
   { id: "blogo",   name: "Błogosł.", me: "🙏", type: "power", cost: 2, heal: 70, radius: 60, arena: 0, info: "Boża moc: błogosławieństwo leczy Twoich" },
   { id: "golebica", name: "Gołębica", me: "🕊️", foe: "🦇", cost: 2, hp: 35, dmg: 7, range: 20, speed: 75, air: true, arena: 1, info: "Lata nad rzeką" },
   { id: "mur",     name: "Mur",     me: "🧱", foe: "🪵", type: "building", cost: 3, hp: 320, arena: 1, info: "Mur Nehemiasza: zatrzymuje wrogów" },
+  { id: "traby",   name: "Trąby",   me: "📯", type: "power", cost: 3, towerDmg: 110, radius: 45, arena: 1, info: "Boża moc: trąby Jerycha kruszą tylko wieże" },
+  { id: "mojzesz", name: "Mojżesz", me: "🌊", type: "power", cost: 2, part: 12, arena: 2, info: "Boża moc: woda się rozstępuje i Twoi przejdą tędy przez rzekę" },
+  { id: "arka",    name: "Arka",    me: "🚢", foe: "🏚️", type: "building", cost: 5, hp: 260, life: 30, spawns: ANIMAL, every: 4, arena: 3, info: "Arka Noego: co chwilę wypuszcza zwierzęta" },
   { id: "michal",  name: "Michał",  me: "👼", foe: "🐉", cost: 6, hp: 200, dmg: 25, range: 20, speed: 50, air: true, arena: 2, info: "Archanioł: lata, najmocniejszy" },
 ];
 const DEFAULT_DECK = ["trebacz", "dawid", "gedeon", "lew", "jozue", "samson", "grad", "blogo"];
@@ -115,6 +144,38 @@ const DIFFS = [
   { name: "🐑 Łatwy",  rate: 0.9, hp: 1,    smart: false },
   { name: "🦁 Średni", rate: 1.2, hp: 1.15, smart: true },
   { name: "🐉 Trudny", rate: 1.6, hp: 1.35, smart: true },
+];
+const DUO = { name: "👫 We dwoje", rate: 1, hp: 1, smart: false, duo: true };
+// kampania: kolejne bitwy z historią; level = numer etapu
+const CAMPAIGN = [
+  { e: "🐑", name: "Pasterz Dawid", rate: 1, hp: 1, smart: false,
+    story: "Dawid pasł owce swojego taty. Gdy przyszedł lew i niedźwiedź, Bóg dał mu odwagę, by obronić stado. Obroń swój obóz!" },
+  { e: "🎺", name: "Mury Jerycha", rate: 1.1, hp: 1.1, smart: true,
+    story: "Jozue i lud obchodzili Jerycho, a gdy zagrały trąby i wszyscy zawołali, mury upadły. Zburz wieże przeciwnika!" },
+  { e: "🏺", name: "Gedeon i 300", rate: 1.3, hp: 1.15, smart: true,
+    story: "Gedeon miał tylko 300 ludzi z trąbami, dzbanami i pochodniami, ale Bóg był z nimi. Nie bój się, że jest was mało!" },
+  { e: "🔥", name: "Eliasz na Karmelu", rate: 1.45, hp: 1.25, smart: true,
+    story: "Eliasz modlił się, a Bóg zesłał ogień z nieba. Zaufaj Bożej mocy!" },
+  { e: "🧌", name: "Dawid i Goliat", rate: 1.4, hp: 1.25, smart: true, boss: true,
+    story: "Olbrzym Goliat szydził z Boga. Mały Dawid wyszedł do niego z procą w imię Pana. Uwaga: Goliat co chwilę wraca do walki!" },
+];
+CAMPAIGN.forEach((c, i) => c.level = i);
+// zadania dnia: codziennie 3 inne z tej listy
+const QUESTS = [
+  { id: "win",    key: "win",    goal: 1,  text: "Wygraj bitwę" },
+  { id: "riddle", key: "riddle", goal: 3,  text: "Odpowiedz dobrze na 3 zagadki" },
+  { id: "tower",  key: "tower",  goal: 3,  text: "Zburz 3 wieże przeciwnika" },
+  { id: "power",  key: "power",  goal: 5,  text: "Użyj 5 razy Bożej mocy" },
+  { id: "play",   key: "play",   goal: 20, text: "Wystaw 20 kart" },
+  { id: "three",  key: "three",  goal: 1,  text: "Wygraj z 3 koronami" },
+];
+const BADGES = [
+  { e: "🥇", name: "Pierwsze zwycięstwo",       ok: () => (save.stats.win || 0) >= 1 },
+  { e: "🏅", name: "10 zwycięstw",              ok: () => (save.stats.win || 0) >= 10 },
+  { e: "👑", name: "Wygrana z 3 koronami",      ok: () => (save.stats.three || 0) >= 1 },
+  { e: "📖", name: "Znawca Biblii: 20 zagadek", ok: () => (save.stats.riddle || 0) >= 20 },
+  { e: "🙏", name: "30 razy Boża moc",          ok: () => (save.stats.power || 0) >= 30 },
+  { e: "🧌", name: "Pogromca Goliata",          ok: () => save.campaign >= CAMPAIGN.length },
 ];
 // first answer is the correct one
 const QUESTIONS = [
@@ -152,6 +213,10 @@ let save = null;
 try { save = JSON.parse(localStorage.getItem(SAVE)); } catch {}
 if (!save || !save.cards) save = { trophies: 0, best: 0, deck: [...DEFAULT_DECK], cards: {}, sound: true };
 CARDS.forEach(c => save.cards[c.id] ??= { lvl: 1, copies: 0 });
+save.stats ??= {}; save.campaign ??= 0;
+const today = Math.floor((Date.now() - new Date().getTimezoneOffset() * 6e4) / 864e5); // numer dnia wg zegara dziecka
+if (save.daily?.day !== today) save.daily = { day: today, prog: {}, claimed: [] };
+const todayQuests = () => [0, 2, 4].map(k => QUESTS[(today + k) % QUESTS.length]);
 const store = () => { try { localStorage.setItem(SAVE, JSON.stringify(save)); } catch {} };
 const arenaIdx = () => ARENAS.reduce((a, ar, i) => save.best >= ar.min ? i : a, 0); // areny nie cofają się po porażce
 const unlocked = c => c.arena <= arenaIdx();
@@ -241,7 +306,20 @@ function renderMenu() {
     };
     coll.append(b);
   }
-  document.querySelectorAll("#diffs button").forEach(b => b.disabled = save.deck.length !== 8);
+  const camp = $("camp"); camp.innerHTML = "";
+  CAMPAIGN.forEach((lv, i) => {
+    const b = document.createElement("button");
+    b.textContent = `${i < save.campaign ? "✅" : i === save.campaign ? "▶️" : "🔒"} ${i + 1}. ${lv.e} ${lv.name}`;
+    b.dataset.lock = i > save.campaign ? 1 : "";
+    b.onclick = () => story(lv);
+    camp.append(b);
+  });
+  $("quests").innerHTML = todayQuests().map(q => {
+    const n = save.daily.prog[q.id] || 0, done = save.daily.claimed.includes(q.id);
+    return `<div><span>${done ? "✅" : n >= q.goal ? "🎁" : "⬜"} ${q.text}</span><b>${n}/${q.goal}</b></div>`;
+  }).join("");
+  $("badges").innerHTML = BADGES.map(b => `<span class="${b.ok() ? "" : "off"}" title="${b.name}" role="img" aria-label="${b.name}${b.ok() ? "" : " (jeszcze nie)"}">${b.e}</span>`).join("");
+  document.querySelectorAll("#diffs button, #duo, #camp button").forEach(b => b.disabled = save.deck.length !== 8 || !!b.dataset.lock);
   if (save.deck.length !== 8) $("menuMsg").textContent = `Talia musi mieć 8 kart (teraz ${save.deck.length}).`;
 }
 DIFFS.forEach(d => {
@@ -250,6 +328,15 @@ DIFFS.forEach(d => {
   b.onclick = () => start(d);
   $("diffs").append(b);
 });
+$("duo").onclick = () => start(DUO);
+function story(lv) { // opowieść przed etapem kampanii
+  dlg.innerHTML = `<p style="font-size:56px;margin:0">${lv.e}</p><h2>${lv.name}</h2><p>${lv.story}</p>
+    <button id="go">⚔️ Do boju!</button><button id="back">Wróć</button>`;
+  $("go").onclick = () => { dlg.close(); speechSynthesis.cancel(); start(lv); };
+  $("back").onclick = () => dlg.close();
+  dlg.showModal();
+  say(lv.name + ". " + lv.story);
+}
 renderMenu();
 
 // --- pole bitwy ---
@@ -279,8 +366,9 @@ const towers = [
   mkTower(1, W / 2, 40, true),     mkTower(1, W / 4, 108, false),     mkTower(1, W * 3 / 4, 108, false),
 ];
 let units = [...towers], shots = [], fx = [];
-let diff = DIFFS[0], mana = 5, foeMana = 5, foeNext = null, paused = true, askCd = 0, over = false, time = 0;
-let cycle = [], hand = [], selected = 0;
+let diff = DIFFS[0], mana = [5, 5], foeNext = null, paused = true, askCd = 0, over = false, time = 0;
+let cycles = [[], []], hands = [[], []], sel = [0, 0], armed = -1; // [gracz 1 (dół), gracz 2 / przeciwnik (góra)]
+let parted = [null, null], emos = [null, null], bossT = 6, badgesBefore = [];
 let msg = "", msgT = 0, T = 0, shake = 0, nextId = 0;
 const notice = t => { msg = t; msgT = 1.5; };
 
@@ -291,10 +379,12 @@ const crownsOf = side => {
 };
 
 // dokąd iść teraz: prosto do celu, albo najpierw do najbliższego mostu i przez niego
+// mosty + przejście przez rozstąpioną wodę (tylko dla strony, która zesłała Mojżesza)
+const crossings = u => parted[u.side] ? [...BRIDGES, parted[u.side].x] : BRIDGES;
 function waypoint(u, tx, ty) {
   const below = u.y > H / 2;
   if (u.air || below === ty > H / 2) return [tx, ty];
-  const bx = Math.abs(u.x - BRIDGES[0]) <= Math.abs(u.x - BRIDGES[1]) ? BRIDGES[0] : BRIDGES[1];
+  const bx = crossings(u).reduce((a, b) => Math.abs(u.x - b) < Math.abs(u.x - a) ? b : a);
   if (Math.abs(u.x - bx) > 10) return [bx, H / 2 + (below ? 24 : -24)]; // podejdź do wejścia na most
   return [bx, H / 2 + (below ? -24 : 24)];                               // przejdź na drugą stronę
 }
@@ -346,7 +436,8 @@ function spawn(side, c, x, y, m = 1) {
   for (let k = 0; k < n; k++)
     units.push({ id: nextId++, side, x: x + (k - (n - 1) / 2) * 24, y, hp, max: hp, dmg: Math.round((c.dmg || 0) * m), range: c.range || 0,
                  speed: c.speed || 0, air: c.air, building: c.type === "building", splash: c.splash, siege: c.siege,
-                 onlyBuildings: c.onlyBuildings, emoji: side ? c.foe : c.me, cd: 0, flash: 0 });
+                 onlyBuildings: c.onlyBuildings, emoji: side ? c.foe : c.me, cd: 0, flash: 0,
+                 big: c.big, life: c.life, spawns: c.spawns, every: c.every, spawnT: 1, m });
   ring(x, y + 12, side ? "#e74c3c" : "#3498db");
   for (let i = 0; i < 3; i++) fx.push({ x: x + (Math.random() - 0.5) * 30, y: y + (Math.random() - 0.5) * 20, vx: 0, vy: -30, life: 0.6, max: 0.6, text: "✨", size: 14 });
   sfx("spawn");
@@ -361,6 +452,15 @@ function power(side, c, x, y, m) {
     ring(x, y, "#f1c40f", c.radius); burst(x, y, 24, ["#f1c40f", "#fff6b0", "#fff"], { speed: 90, life: 0.9 });
     for (let i = 0; i < 6; i++) fx.push({ x: x + (Math.random() - 0.5) * c.radius, y: y + (Math.random() - 0.5) * c.radius, vx: 0, vy: -35, life: 0.9, max: 0.9, text: "✨", size: 16 });
     sfx("bless");
+  } else if (c.part) {
+    parted[side] = { x: clamp(x, 30, W - 30), t: c.part };
+    burst(parted[side].x, H / 2, 30, ["#86ccf5", "#fff", "#4a9fd8"], { speed: 110, life: 0.8 });
+    sfx("bless");
+  } else if (c.towerDmg) {
+    for (let i = 0; i < 5; i++) fx.push({ x: x + (Math.random() - 0.5) * 60, y: y + 20, vx: (Math.random() - 0.5) * 40, vy: -50, life: 1, max: 1, text: "📯", size: 18 });
+    ring(x, y, "#f1c40f", c.radius + 20);
+    for (const o of towers) if (o.side !== side && o.hp > 0 && dist(o, { x, y }) < c.radius + 20) damage(o, c.towerDmg * m);
+    [392, 523, 659].forEach((f, i) => tone(f, 0.5, "sawtooth", save.sound ? 0.05 : 0, i * 0.12));
   } else {
     for (let i = 0; i < 16; i++) fx.push({ x: x + (Math.random() - 0.5) * c.radius * 1.6, y: y - 90 - Math.random() * 40, vx: 0, vy: 380, life: 0.3, max: 0.3, text: "🧊", size: 14 });
     ring(x, y, "#dff4ff", c.radius); burst(x, y, 20, ["#dff4ff", "#a9d6f5", "#fff"], { speed: 120, life: 0.5 });
@@ -371,48 +471,71 @@ function power(side, c, x, y, m) {
 }
 
 // --- ręka 4 kart z talii 8 ---
-const handBtns = [0, 1, 2, 3].map(i => {
+const look = (c, s) => s ? c.foe || c.me : c.me;
+const handBtns = [0, 1].map(s => [0, 1, 2, 3].map(i => {
   const b = document.createElement("button");
-  b.onclick = () => { selected = i; renderHand(); };
-  $("hand").insertBefore(b, $("next"));
+  b.onclick = () => { sel[s] = i; armed = s; renderHand(s); };
+  $(s ? "hand2" : "hand").insertBefore(b, $(s ? "next2" : "next"));
   return b;
-});
-function renderHand() {
-  hand.forEach((id, i) => {
-    const c = byId(id), b = handBtns[i];
+}));
+function renderHand(s) {
+  hands[s].forEach((id, i) => {
+    const c = byId(id), b = handBtns[s][i];
     if (b.dataset.id !== id) { // DOM zmieniany tylko gdy trzeba (podmiana co klatkę gubi kliknięcia w Safari)
       b.dataset.id = id;
-      b.innerHTML = `<span class="cost">${c.cost}</span><span class="e">${c.me}</span>${c.name}`;
+      b.innerHTML = `<span class="cost">${c.cost}</span><span class="e">${look(c, s)}</span>${c.name}`;
       b.setAttribute("aria-label", `${c.name}, koszt ${c.cost} manny. ${c.info}`);
       b.classList.toggle("power", c.type === "power");
     }
-    b.classList.toggle("sel", i === selected);
+    b.classList.toggle("sel", i === sel[s]);
   });
-  const n = byId(cycle[0]);
-  $("next").innerHTML = `<small>Następna</small><span class="e">${n.me}</span>`;
+  $(s ? "next2" : "next").innerHTML = `<small>Następna</small><span class="e">${look(byId(cycles[s][0]), s)}</span>`;
 }
 
 canvas.addEventListener("pointerdown", e => {
   if (paused || over) return;
-  const c = byId(hand[selected]);
-  if (mana < c.cost) return notice(`Czekaj na mannę 🍞 (potrzeba ${c.cost})`);
   const r = canvas.getBoundingClientRect();
   let x = clamp((e.clientX - r.left) * W / r.width, 20, W - 20), y = (e.clientY - r.top) * H / r.height;
-  if (c.type !== "power") y = clamp(y, H / 2 + 30, H - 20); // postacie i mury tylko na Twojej połowie
-  mana -= c.cost;
-  spawn(0, c, x, y, mult(c.id));
-  hand[selected] = cycle.shift(); cycle.push(c.id);
-  renderHand();
+  // we dwoje: Boża moc należy do tego, kto ją właśnie wybrał; postać do tego, na czyjej połowie dotknięto
+  let s = 0;
+  if (diff.duo) s = armed >= 0 && byId(hands[armed][sel[armed]]).type === "power" ? armed : y < H / 2 ? 1 : 0;
+  const c = byId(hands[s][sel[s]]);
+  if (mana[s] < c.cost) return notice(`Czekaj na mannę 🍞 (potrzeba ${c.cost})`);
+  if (c.type !== "power") y = s ? clamp(y, 20, H / 2 - 30) : clamp(y, H / 2 + 30, H - 20); // postacie i mury tylko na swojej połowie
+  mana[s] -= c.cost;
+  if (armed === s) armed = -1;
+  spawn(s, c, x, y, diff.duo ? 1 : mult(c.id));
+  if (!s) { track("play"); if (c.type === "power") track("power"); }
+  hands[s][sel[s]] = cycles[s].shift(); cycles[s].push(c.id);
+  renderHand(s);
 });
+
+// emotki: krótki dymek nad główną wieżą
+function emote(s, e) {
+  emos[s] = { e, t: 2 };
+  tone(s ? 600 : 800, 0.12, "sine", 0.08);
+  if (!s && !diff.duo && Math.random() < 0.5) setTimeout(() => !over && emote(1, ["😮", "🙂", "👍", "🙏"][Math.floor(Math.random() * 4)]), 900);
+}
+document.querySelectorAll(".emo").forEach(b => b.onclick = () => { if (!paused && !over) emote(+b.dataset.s, b.textContent); });
+
+// postęp do zadań dnia i odznak (nie liczy się gra we dwoje)
+function track(k, n = 1) {
+  if (diff.duo || !n) return;
+  save.stats[k] = (save.stats[k] || 0) + n;
+  for (const q of todayQuests()) if (q.key === k) save.daily.prog[q.id] = Math.min(q.goal, (save.daily.prog[q.id] || 0) + n);
+}
 
 // --- przeciwnik ---
 const foeMult = () => diff.hp * (1 + 0.08 * arenaIdx());
-const foePick = () => { const p = CARDS.filter(c => unlocked(c) && !c.heal); return p[Math.floor(Math.random() * p.length)]; };
+const foePick = () => { const p = CARDS.filter(c => unlocked(c) && !c.heal && !c.part); return p[Math.floor(Math.random() * p.length)]; };
 function foeTurn() {
   const c = foeNext;
-  if (foeMana < c.cost) return;
+  if (mana[1] < c.cost) return;
   let x, y;
-  if (c.type === "power") { // grad tam, gdzie stoi najwięcej Twoich postaci
+  if (c.towerDmg) { // trąby na najsłabszą Twoją wieżę
+    const t = towers.filter(t => !t.side && t.hp > 0).sort((a, b) => a.hp - b.hp)[0];
+    x = t.x; y = t.y;
+  } else if (c.type === "power") { // grad tam, gdzie stoi najwięcej Twoich postaci
     let most = 0;
     for (const u of units) if (!u.side && !u.tower) {
       const n = units.filter(o => !o.side && !o.tower && dist(o, u) < c.radius).length;
@@ -425,7 +548,7 @@ function foeTurn() {
     if (threat) { x = clamp(threat.x, 30, W - 30); y = clamp(threat.y - 70, 80, H / 2 - 30); }
     else { x = BRIDGES[Math.random() < 0.5 ? 0 : 1] + (Math.random() - 0.5) * 60; y = c.type === "building" ? 170 : 130; }
   }
-  foeMana -= c.cost;
+  mana[1] -= c.cost;
   spawn(1, c, x, y, foeMult());
   foeNext = foePick();
 }
@@ -444,20 +567,37 @@ function separate() { // postacie się przepychają, zamiast stać jedna na drug
   }
   for (const u of mob) { // nikt nie zostaje wepchnięty do wody
     u.x = clamp(u.x, 10, W - 10);
-    if (!u.air && Math.abs(u.y - H / 2) < 14 && Math.min(...BRIDGES.map(b => Math.abs(u.x - b))) > 22) u.y = u.y > H / 2 ? H / 2 + 14 : H / 2 - 14;
+    if (!u.air && Math.abs(u.y - H / 2) < 14 && Math.min(...crossings(u).map(b => Math.abs(u.x - b))) > 22) u.y = u.y > H / 2 ? H / 2 + 14 : H / 2 - 14;
   }
 }
 
 function step(dt) {
   time += dt;
   const rate = MANA_PER_SEC * (time > TIME - 60 ? 2 : 1); // ostatnia minuta i dogrywka: manna 2× szybciej
-  mana = Math.min(MAX_MANA, mana + rate * dt);
-  foeMana = Math.min(MAX_MANA, foeMana + rate * dt * diff.rate);
+  mana[0] = Math.min(MAX_MANA, mana[0] + rate * dt);
+  mana[1] = Math.min(MAX_MANA, mana[1] + rate * dt * diff.rate);
   askCd = Math.max(0, askCd - dt);
-  foeTurn();
+  for (const s of [0, 1]) {
+    if (parted[s] && (parted[s].t -= dt) <= 0) parted[s] = null;
+    if (emos[s] && (emos[s].t -= dt) <= 0) emos[s] = null;
+  }
+  if (!diff.duo) foeTurn();
+  if (diff.boss && (bossT -= dt) <= 0) { // Goliat wraca co 45 s
+    bossT = 45;
+    spawn(1, GOLIAT, BRIDGES[Math.random() < 0.5 ? 0 : 1], 120, foeMult());
+    notice("🧌 Goliat nadchodzi!"); sfx("boom");
+  }
   for (const u of units) {
     u.flash -= dt; u.cd -= dt; u.moving = false;
-    if (u.building) { u.hp -= u.max / 40 * dt; continue; } // mur sam się kruszy w 40 s
+    if (u.building) { // budowla sama się kruszy (mur w 40 s); arka co chwilę wypuszcza zwierzęta
+      u.hp -= u.max / (u.life || 40) * dt;
+      if (u.spawns && (u.spawnT -= dt) <= 0) {
+        u.spawnT = u.every;
+        spawn(u.side, u.spawns, u.x, u.y + (u.side ? 26 : -26), u.m);
+        if (!u.side) units[units.length - 1].emoji = ["🐘", "🦒", "🐑", "🐻", "🐄"][Math.floor(Math.random() * 5)];
+      }
+      continue;
+    }
     if (u.tower && (!u.active || u.hp <= 0)) continue;
     let target = null, best = Infinity;
     for (const o of units) {
@@ -508,13 +648,13 @@ function drawUnit(u) {
     ctx.fillStyle = `rgba(255,70,70,${u.flash * 4})`;
     ctx.beginPath(); ctx.arc(u.x, u.y - bob, u.tower ? 30 : 17, 0, Math.PI * 2); ctx.fill();
   }
-  const jig = u.tower && u.flash > 0 ? (Math.random() - 0.5) * 4 : 0, size = u.tower ? (u.king ? 50 : 40) : u.building ? 32 : 28;
+  const jig = u.tower && u.flash > 0 ? (Math.random() - 0.5) * 4 : 0, size = u.tower ? (u.king ? 50 : 40) : u.building ? 32 : u.big ? 48 : 28;
   ctx.font = `${size}px ${EMOJI_FONT}`;
   ctx.fillStyle = "#000"; // emoji przejmują przezroczystość koloru wypełnienia
   ctx.fillText(u.hp > 0 ? u.emoji : "🔥", u.x + jig, u.y - bob);
   if (u.tower && u.king && !u.active && u.hp > 0) { ctx.font = `16px ${EMOJI_FONT}`; ctx.fillText("💤", u.x + 30, u.y - 28); }
   if (u.tower && u.hp <= 0) return;
-  const w = u.tower ? (u.king ? 80 : 60) : 32, h = u.tower ? 7 : 5, top = u.y - (u.tower ? 36 : 24) - bob;
+  const w = u.tower ? (u.king ? 80 : 60) : u.big ? 46 : 32, h = u.tower ? 7 : 5, top = u.y - (u.tower ? 36 : u.big ? 34 : 24) - bob;
   ctx.fillStyle = "#2c2c2c"; ctx.fillRect(u.x - w / 2 - 1, top - 1, w + 2, h + 2);
   ctx.fillStyle = u.side ? "#e74c3c" : "#3498db"; ctx.fillRect(u.x - w / 2, top, w * Math.max(0, u.hp) / u.max, h);
 }
@@ -538,12 +678,21 @@ function draw() {
     ctx.strokeStyle = "#6b3410"; ctx.lineWidth = 2;
     for (let x = bx - 25; x <= bx + 25; x += 10) { ctx.beginPath(); ctx.moveTo(x, ry - 14); ctx.lineTo(x, ry + 14); ctx.stroke(); }
   }
+  for (const p of parted) if (p) { // rozstąpiona woda: pas suchego dna
+    ctx.fillStyle = "#e3cf96"; ctx.fillRect(p.x - 20, ry - 11, 40, 22);
+    ctx.fillStyle = "#2f7fb8"; ctx.fillRect(p.x - 23, ry - 12, 4, 24); ctx.fillRect(p.x + 19, ry - 12, 4, 24);
+  }
   ctx.textAlign = "center"; ctx.textBaseline = "middle";
-  const sel = hand.length && byId(hand[selected]);
-  if (sel && !over && !paused && mana >= sel.cost) { // podpowiedź: co i gdzie możesz postawić
+  for (const s of diff.duo ? [0, 1] : [0]) { // podpowiedź: co i gdzie możesz postawić
+    const cur = hands[s].length && byId(hands[s][sel[s]]);
+    if (!cur || over || paused || mana[s] < cur.cost) continue;
+    ctx.save();
+    if (s) { ctx.translate(W, H); ctx.rotate(Math.PI); } // gracz 2 czyta od swojej strony
     ctx.font = `15px ${EMOJI_FONT}`; ctx.fillStyle = `rgba(0,0,0,${0.35 + 0.15 * Math.sin(T * 4)})`;
-    ctx.fillText(sel.type === "power" ? `Dotknij, gdzie zesłać: ${sel.me} ${sel.name}` : `Dotknij tutaj, aby postawić: ${sel.me} ${sel.name}`, W / 2, H / 2 + 40);
-    ctx.font = `13px ${EMOJI_FONT}`; ctx.fillText(sel.info, W / 2, H / 2 + 58);
+    const e = look(cur, s);
+    ctx.fillText(cur.type === "power" ? `Dotknij, gdzie zesłać: ${e} ${cur.name}` : `Dotknij tutaj, aby postawić: ${e} ${cur.name}`, W / 2, H / 2 + 40);
+    ctx.font = `13px ${EMOJI_FONT}`; ctx.fillText(cur.info, W / 2, H / 2 + 58);
+    ctx.restore();
   }
   [...units].sort((a, b) => (a.air ? 1 : 0) - (b.air ? 1 : 0) || a.y - b.y).forEach(drawUnit); // latający nad resztą, bliżsi na wierzchu
 
@@ -567,6 +716,13 @@ function draw() {
     }
   }
   ctx.globalAlpha = 1;
+  emos.forEach((m, s) => {
+    if (!m) return;
+    const x = W / 2 + 52, y = s ? 78 : H - 78;
+    ctx.fillStyle = "#fff"; ctx.strokeStyle = s ? "#e74c3c" : "#3498db"; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(x, y, 20, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.font = `24px ${EMOJI_FONT}`; ctx.fillStyle = "#000"; ctx.fillText(m.e, x, y + 1);
+  });
   if (msgT > 0) {
     ctx.font = `bold 18px ${EMOJI_FONT}`; ctx.lineWidth = 4; ctx.strokeStyle = "#fff";
     ctx.strokeText(msg, W / 2, H * 0.75); ctx.fillStyle = "#8e2b1f"; ctx.fillText(msg, W / 2, H * 0.75);
@@ -574,15 +730,16 @@ function draw() {
   ctx.restore();
 
   // panel wokół pola
-  $("fill").style.width = mana * 10 + "%";
-  $("foeFill").style.width = foeMana * 10 + "%";
-  setText("manaText", `🍞 ${Math.floor(mana)}`);
-  setText("foeText", `🏯 ${Math.floor(foeMana)}`);
+  $("fill").style.width = mana[0] * 10 + "%";
+  $("foeFill").style.width = $("fill2").style.width = mana[1] * 10 + "%";
+  setText("manaText", `🍞 ${Math.floor(mana[0])}`);
+  setText("foeText", `🏯 ${Math.floor(mana[1])}`);
+  setText("manaText2", `🍞 ${Math.floor(mana[1])}`);
   const left = Math.max(0, time < TIME ? TIME - time : TIME + OVERTIME - time), x2 = time > TIME - 60;
   setText("clock", `${time >= TIME ? "Dogr. " : "⏱"}${Math.floor(left / 60)}:${String(Math.floor(left % 60)).padStart(2, "0")}${x2 ? " ⚡" : ""}`);
   $("clock").classList.toggle("x2", x2);
   setText("crowns", `👑 ${crownsOf(0)}:${crownsOf(1)}`);
-  handBtns.forEach((b, i) => b.classList.toggle("poor", hand.length > 0 && mana < byId(hand[i]).cost)); // dalej da się wybrać i poczekać
+  handBtns.forEach((bs, s) => bs.forEach((b, i) => b.classList.toggle("poor", hands[s].length > 0 && mana[s] < byId(hands[s][i]).cost))); // dalej da się wybrać i poczekać
   askBtn.disabled = askCd > 0;
   setText("ask", askCd > 0 ? `📖 Następna zagadka za ${Math.ceil(askCd)} s` : "📖 Zagadka = +3 🍞");
 }
@@ -590,8 +747,10 @@ function draw() {
 // --- start, zagadki, koniec ---
 function start(d) {
   diff = d;
-  cycle = shuffle(save.deck); hand = cycle.splice(0, 4); renderHand();
+  badgesBefore = BADGES.filter(b => b.ok()).map(b => b.e);
+  for (const s of [0, 1]) { cycles[s] = shuffle(save.deck); hands[s] = cycles[s].splice(0, 4); renderHand(s); }
   foeNext = foePick();
+  $("game").classList.toggle("duo", !!d.duo); $("p2").hidden = !d.duo; askBtn.hidden = !!d.duo;
   $("menu").hidden = true; $("game").hidden = false;
   initAudio(); music(true);
   paused = false;
@@ -607,7 +766,7 @@ askBtn.onclick = () => {
     b.onclick = () => {
       const ok = t === a[0];
       if (ok) {
-        mana = Math.min(MAX_MANA, mana + 3);
+        mana[0] = Math.min(MAX_MANA, mana[0] + 3); track("riddle");
         floatText(W / 2, H - 100, "+3 🍞", "#8e44ad", 24, false);
         burst(W / 2, H - 80, 20, ["#f1c40f", "#e2b6ff", "#fff"], { speed: 120, life: 0.8 });
         sfx("bless");
@@ -622,38 +781,61 @@ askBtn.onclick = () => {
 };
 dlg.addEventListener("cancel", e => e.preventDefault());
 
+// skrzynia: n losowych kart, z nadmiaru kopii od razu wyższy poziom
+function openChest(n = 6) {
+  const pool = CARDS.filter(unlocked), got = {};
+  for (let i = 0; i < n; i++) { const c = pool[Math.floor(Math.random() * pool.length)]; got[c.id] = (got[c.id] || 0) + 1; }
+  return `<span style="font-size:16px">${Object.entries(got).map(([id, k]) => {
+    const s = save.cards[id]; let up = "";
+    s.copies += k;
+    while (s.copies >= need(s.lvl) && s.lvl < 10) { s.copies -= need(s.lvl); s.lvl++; up = ` ⬆️ poziom ${s.lvl}!`; }
+    return `${byId(id).me} ${byId(id).name} ×${k}${up}`;
+  }).join("<br>")}</span>`;
+}
+
+function reward(result) {
+  const before = arenaIdx(), delta = { win: 30, lose: -10, draw: 0 }[result], parts = [];
+  save.trophies = Math.max(0, save.trophies + delta);
+  save.best = Math.max(save.best, save.trophies);
+  track("tower", towers.filter(t => t.side && t.hp <= 0).length);
+  if (result === "win") {
+    track("win"); if (crownsOf(0) === 3) track("three");
+    parts.push(`<p>🎁 Skrzynia:<br>${openChest()}</p>`);
+    if (diff.level === save.campaign) {
+      save.campaign++;
+      const nx = CAMPAIGN[save.campaign];
+      parts.push(`<p>📜 ${nx ? `Odblokowano etap: ${nx.e} ${nx.name}` : "Kampania ukończona! Pokonałeś Goliata! 🧌"}</p>`);
+    }
+  }
+  for (const q of todayQuests())
+    if ((save.daily.prog[q.id] || 0) >= q.goal && !save.daily.claimed.includes(q.id)) {
+      save.daily.claimed.push(q.id);
+      parts.push(`<p>🎯 Zadanie wykonane: ${q.text}<br>🎁 ${openChest(4)}</p>`);
+    }
+  const newB = BADGES.filter(b => b.ok() && !badgesBefore.includes(b.e));
+  if (newB.length) parts.push(`<p>🏅 Nowa odznaka: ${newB.map(b => b.e + " " + b.name).join(", ")}</p>`);
+  const after = arenaIdx(), newCards = CARDS.filter(c => c.arena > before && c.arena <= after);
+  if (after > before) parts.push(`<p>🎉 Nowa arena: ${ARENAS[after].name}!${newCards.length ? `<br>Nowe karty: ${newCards.map(c => c.me + " " + c.name).join(", ")}` : ""}</p>`);
+  store();
+  const title = { win: "Zwycięstwo!", lose: "Tym razem się nie udało.", draw: "Remis!" }[result];
+  return `<p>${title}<br>👑 ${crownsOf(0)} : ${crownsOf(1)} · ${delta >= 0 ? "+" : ""}${delta} 🏆</p>` + parts.join("");
+}
+
 function end(result) {
   if (over) return;
   over = true; music(false);
-  const before = arenaIdx(), delta = { win: 30, lose: -10, draw: 0 }[result];
-  save.trophies = Math.max(0, save.trophies + delta);
-  save.best = Math.max(save.best, save.trophies);
-  let chest = "";
-  if (result === "win") { // skrzynia: 6 losowych kart, z nadmiaru kopii od razu wyższy poziom
-    const pool = CARDS.filter(unlocked), got = {};
-    for (let i = 0; i < 6; i++) { const c = pool[Math.floor(Math.random() * pool.length)]; got[c.id] = (got[c.id] || 0) + 1; }
-    const lines = Object.entries(got).map(([id, n]) => {
-      const s = save.cards[id]; let up = "";
-      s.copies += n;
-      while (s.copies >= need(s.lvl) && s.lvl < 10) { s.copies -= need(s.lvl); s.lvl++; up = ` ⬆️ poziom ${s.lvl}!`; }
-      return `${byId(id).me} ${byId(id).name} ×${n}${up}`;
-    });
-    chest = `<p>🎁 Skrzynia:<br><span style="font-size:16px">${lines.join("<br>")}</span></p>`;
+  const duoTitle = { win: "Wygrywa 🔵 Niebieski!", lose: "Wygrywa 🔴 Czerwony!", draw: "Remis!" }[result];
+  const body = diff.duo ? `<p>${duoTitle}<br>👑 ${crownsOf(0)} : ${crownsOf(1)}</p>` : reward(result);
+  if (result === "win" || diff.duo && result !== "draw")
     for (let i = 0; i < 160; i++)
       fx.push({ x: Math.random() * W, y: -Math.random() * 200, vx: (Math.random() - 0.5) * 60, vy: 60 + Math.random() * 80, g: 20,
                 life: 5, max: 5, size: 6, color: ["#e74c3c", "#f1c40f", "#2ecc71", "#3498db", "#9b59b6"][i % 5] });
-  }
-  const after = arenaIdx(), newCards = CARDS.filter(c => c.arena > before && c.arena <= after);
-  const arenaMsg = after > before ? `<p>🎉 Nowa arena: ${ARENAS[after].name}!${newCards.length ? `<br>Nowe karty: ${newCards.map(c => c.me + " " + c.name).join(", ")}` : ""}</p>` : "";
-  store();
-  sfx(result === "lose" ? "lose" : "win");
+  sfx(result === "lose" && !diff.duo ? "lose" : "win");
   setTimeout(() => {
-    const title = { win: "Zwycięstwo!", lose: "Tym razem się nie udało.", draw: "Remis!" }[result];
-    dlg.innerHTML = `<p style="font-size:56px;margin:0">${{ win: "🏆", lose: "💪", draw: "🤝" }[result]}</p>
-      <p>${title}<br>👑 ${crownsOf(0)} : ${crownsOf(1)} · ${delta >= 0 ? "+" : ""}${delta} 🏆</p>${chest}${arenaMsg}
-      <button onclick="location.reload()">🏠 Wróć do menu</button>`;
+    const icon = diff.duo ? (result === "draw" ? "🤝" : "🏆") : { win: "🏆", lose: "💪", draw: "🤝" }[result];
+    dlg.innerHTML = `<p style="font-size:56px;margin:0">${icon}</p>${body}<button onclick="location.reload()">🏠 Wróć do menu</button>`;
     dlg.showModal();
-    say(result === "win" ? "Zwycięstwo!" : result === "draw" ? "Remis!" : "Spróbuj jeszcze raz!");
+    say(diff.duo ? duoTitle.replace(/[🔵🔴]/gu, "") : result === "win" ? "Zwycięstwo!" : result === "draw" ? "Remis!" : "Spróbuj jeszcze raz!");
   }, 1200); // najpierw widać wybuch wieży
 }
 
